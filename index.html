@@ -1040,6 +1040,7 @@ const TRANSLATIONS = {
     field_crew:'Crew', field_notes:'Notes', field_job_address:'Job / Address',
     field_county:'County', field_source:'Source', field_price:'Price', field_status:'Status',
     field_auction_datetime:'Auction date & time (optional — shows on calendar)', field_drive_url:'Drive folder link', drive_folder_btn:'📁 Drive Folder',
+    field_phase:'Phase', phase_bid:'Bid Phase', phase_progress:'In Progress', phase_complete:'Complete',
     field_cover_photo:'Cover photo URL', photo_url_hint:'Paste a link to a hosted photo — this can\'t upload from your camera roll directly.',
     field_purchase:'Purchase price', field_reno:'Reno cost', field_sell:'Sell price', field_sold_date:'Sold date (used for the year-by-year counter)',
     field_before_photos:'Before photo URLs (one per line)', field_after_photos:'After photo URLs (one per line)', field_story:'Story / notes',
@@ -1134,6 +1135,7 @@ const TRANSLATIONS = {
     field_crew:'Equipo', field_notes:'Notas', field_job_address:'Trabajo / Dirección',
     field_county:'Condado', field_source:'Fuente', field_price:'Precio', field_status:'Estado',
     field_auction_datetime:'Fecha y hora de subasta (opcional — aparece en el calendario)', field_drive_url:'Enlace a la carpeta de Drive', drive_folder_btn:'📁 Carpeta de Drive',
+    field_phase:'Fase', phase_bid:'Fase de oferta', phase_progress:'En progreso', phase_complete:'Completado',
     field_cover_photo:'URL de foto de portada', photo_url_hint:'Pega un enlace a una foto ya alojada — esto no puede subir fotos directamente desde tu carrete.',
     field_purchase:'Precio de compra', field_reno:'Costo de renovación', field_sell:'Precio de venta', field_sold_date:'Fecha de venta (para el contador por año)',
     field_before_photos:'URLs de fotos "antes" (una por línea)', field_after_photos:'URLs de fotos "después" (una por línea)', field_story:'Historia / notas',
@@ -2512,19 +2514,29 @@ function renderProperties(content){
 }
 
 // ---------------- active jobs view ----------------
+function jobPhaseInfo(job){
+  const phase = job.phase || 'In Progress';
+  if(phase==='Bid Phase') return {label:t('phase_bid'), cls:'status-bid'};
+  if(phase==='Complete') return {label:t('phase_complete'), cls:'status-won'};
+  return {label:t('phase_progress'), cls:'status-active'};
+}
 function activeJobCardHtml(job){
   const lastNote = (job.noteLog && job.noteLog.length) ? job.noteLog[job.noteLog.length-1] : null;
+  const pi = jobPhaseInfo(job);
   return `<div class="prop-card ${editMode?'editable':''}" data-source="standalone" data-id="${job.id}">
     <div class="prop-address">${escapeHtml(job.title||'(untitled job)')}</div>
-    <span class="status-badge status-active">Active</span>
+    <span class="status-badge ${pi.cls}">${escapeHtml(pi.label)}</span>
     ${job.crew && job.crew.length ? `<div class="prop-meta">${t('crew_label')} ${job.crew.map(escapeHtml).join(', ')}</div>` : ''}
+    ${job.driveUrl ? `<a class="drive-link-btn" href="${escapeAttr(job.driveUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('drive_folder_btn')}</a>` : ''}
     ${lastNote ? `<div class="prop-notes">${t('latest_note')} ${escapeHtml(lastNote.text)}</div>` : ''}
   </div>`;
 }
 
 function renderActiveJobs(content){
   const activeProps = properties.filter(p=>p.status==='Active').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-  const standalone = [...activeJobs].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  const phaseOrder = {'Bid Phase':0, 'In Progress':1, 'Complete':2};
+  const phaseRank = j => (phaseOrder[j.phase||'In Progress']!==undefined ? phaseOrder[j.phase||'In Progress'] : 1);
+  const standalone = [...activeJobs].sort((a,b)=> (phaseRank(a)-phaseRank(b)) || ((b.createdAt||0)-(a.createdAt||0)));
 
   let html = `<div class="display" style="font-size:24px;">${t('tab_active')}</div>
   <div style="font-size:13.5px;color:#8a8175;margin-bottom:18px;max-width:520px;">${t('active_desc')}</div>`;
@@ -2579,8 +2591,18 @@ function openActiveJobModal(job){
         <input id="ajTitle" value="${job ? escapeAttr(job.title||'') : ''}" placeholder="e.g. 214 Birch St — kitchen flip">
       </div>
       <div class="field">
+        <label>${t('field_phase')}</label>
+        <select id="ajPhase">
+          ${['Bid Phase','In Progress','Complete'].map(s=>`<option value="${s}" ${job && (job.phase||'In Progress')===s?'selected':''}>${t(s==='Bid Phase'?'phase_bid':s==='Complete'?'phase_complete':'phase_progress')}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
         <label>${t('field_crew')}</label>
         <div class="crew-pick" id="ajCrewPick"></div>
+      </div>
+      <div class="field">
+        <label>${t('field_drive_url')}</label>
+        <input id="ajDriveUrl" type="url" value="${job ? escapeAttr(job.driveUrl||'') : ''}" placeholder="https://drive.google.com/drive/folders/...">
       </div>
       <div class="field">
         <label>${t('field_notes')}</label>
@@ -2657,6 +2679,8 @@ function openActiveJobModal(job){
     const entry = {
       id: job ? job.id : uid(),
       title,
+      phase: document.getElementById('ajPhase').value,
+      driveUrl: document.getElementById('ajDriveUrl').value.trim() || null,
       crew: pickedCrew,
       noteLog,
       createdAt: job ? job.createdAt : Date.now()
