@@ -355,6 +355,28 @@
     margin-top:2px;
   }
   .prop-notes{font-size:12.5px;color:#7a7166;margin-top:4px;line-height:1.4;}
+  /* Zillow-style listing cards */
+  .prop-card.listing{padding:0;overflow:hidden;}
+  .prop-photo{
+    position:relative;width:100%;aspect-ratio:16/10;background:#e9e2d8;
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  .prop-photo img{width:100%;height:100%;object-fit:cover;display:block;}
+  .prop-photo .no-photo{font-size:12px;color:#a89e91;font-weight:600;}
+  .prop-fit{
+    position:absolute;top:8px;left:8px;font-size:11px;font-weight:800;letter-spacing:.03em;
+    padding:4px 10px;border-radius:12px;color:#fff;background:#a89e91;
+  }
+  .prop-fit.high{background:#4a7c59;}
+  .prop-fit.mid{background:#c08a3c;}
+  .prop-card-body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:5px;}
+  .prop-price-big{font-size:21px;font-weight:800;color:var(--charcoal);line-height:1.1;}
+  .prop-specs{font-size:13px;font-weight:600;color:var(--ink);}
+  .prop-card.listing .prop-address{font-size:14px;}
+  .prop-badges{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+  .listing-link-btn{display:inline-block;margin-top:4px;padding:8px 14px;border-radius:8px;background:#eef2f7;color:#33475f;font-size:13px;font-weight:700;text-decoration:none;width:fit-content;border:1px solid var(--line);}
+  .listing-link-btn:active{background:#e2e9f2;}
+  .card-actions{display:flex;flex-wrap:wrap;gap:8px;}
   .empty-state{
     text-align:center;
     padding:60px 20px;
@@ -1039,6 +1061,11 @@ const TRANSLATIONS = {
     field_customer:'Customer (optional — for client jobs)', field_customer_ph:'Leave blank for a Ventures-only job',
     field_crew:'Crew', field_notes:'Notes', field_job_address:'Job / Address',
     field_county:'County', field_source:'Source', field_price:'Price', field_status:'Status',
+    field_beds:'Beds', field_baths:'Baths', field_sqft:'Sq ft', field_lot_size:'Lot size',
+    field_property_type:'Property type', field_deal_type:'Deal type', field_fit_score:'Fit score (0–100)',
+    field_photo_url:'Photo URL', field_listing_url:'Listing URL',
+    spec_beds_short:'bd', spec_baths_short:'ba', spec_sqft_short:'sqft',
+    fit_label:'Fit', view_listing_btn:'View Listing', no_photo:'No photo yet',
     field_auction_datetime:'Auction date & time (optional — shows on calendar)', field_drive_url:'Drive folder link', drive_folder_btn:'📁 Drive Folder',
     field_phase:'Phase', phase_bid:'Bid Phase', phase_progress:'In Progress', phase_complete:'Complete',
     field_cover_photo:'Cover photo URL', photo_url_hint:'Paste a link to a hosted photo — this can\'t upload from your camera roll directly.',
@@ -1134,6 +1161,11 @@ const TRANSLATIONS = {
     field_customer:'Cliente (opcional — para trabajos con clientes)', field_customer_ph:'Déjalo en blanco si es solo para Ventures',
     field_crew:'Equipo', field_notes:'Notas', field_job_address:'Trabajo / Dirección',
     field_county:'Condado', field_source:'Fuente', field_price:'Precio', field_status:'Estado',
+    field_beds:'Dormitorios', field_baths:'Baños', field_sqft:'Pies cuad.', field_lot_size:'Tamaño del lote',
+    field_property_type:'Tipo de propiedad', field_deal_type:'Tipo de oferta', field_fit_score:'Puntuación (0–100)',
+    field_photo_url:'URL de foto', field_listing_url:'URL del anuncio',
+    spec_beds_short:'hab', spec_baths_short:'baños', spec_sqft_short:'pc',
+    fit_label:'Afinidad', view_listing_btn:'Ver anuncio', no_photo:'Sin foto aún',
     field_auction_datetime:'Fecha y hora de subasta (opcional — aparece en el calendario)', field_drive_url:'Enlace a la carpeta de Drive', drive_folder_btn:'📁 Carpeta de Drive',
     field_phase:'Fase', phase_bid:'Fase de oferta', phase_progress:'En progreso', phase_complete:'Completado',
     field_cover_photo:'URL de foto de portada', photo_url_hint:'Pega un enlace a una foto ya alojada — esto no puede subir fotos directamente desde tu carrete.',
@@ -2443,6 +2475,22 @@ function statusLabel(status){
   return t(map[status] || 'watching');
 }
 
+function fitBadge(p){
+  const s = (p.fitScore===undefined || p.fitScore===null || p.fitScore==='') ? null : Number(p.fitScore);
+  if(s===null || isNaN(s)) return '';
+  const cls = s>=80 ? 'high' : s>=50 ? 'mid' : '';
+  return `<span class="prop-fit ${cls}">${t('fit_label')} ${s}</span>`;
+}
+
+function specsLine(p){
+  const parts = [];
+  if(p.beds) parts.push(`${escapeHtml(String(p.beds))} ${t('spec_beds_short')}`);
+  if(p.baths) parts.push(`${escapeHtml(String(p.baths))} ${t('spec_baths_short')}`);
+  if(p.sqft) parts.push(`${escapeHtml(String(p.sqft))} ${t('spec_sqft_short')}`);
+  if(p.lotSize) parts.push(`${t('field_lot_size')}: ${escapeHtml(String(p.lotSize))}`);
+  return parts.length ? `<div class="prop-specs">${parts.join(' &nbsp;|&nbsp; ')}</div>` : '';
+}
+
 function propCardHtml(p){
   const statusClass = 'status-' + (p.status||'Watching').toLowerCase().replace(' ','-').replace('bid-submitted','bid');
   let auctionLine = '';
@@ -2453,14 +2501,23 @@ function propCardHtml(p){
     auctionLine = `<div class="prop-auction">${t('auction_label')} ${label}</div>`;
   }
   const lastNote = (p.noteLog && p.noteLog.length) ? p.noteLog[p.noteLog.length-1] : null;
-  return `<div class="prop-card ${editMode?'editable':''}" data-id="${p.id}">
-    <div class="prop-address">${escapeHtml(p.address||'(no address)')}</div>
-    <div class="prop-meta">${escapeHtml(p.county||'')}${p.county&&p.source?' • ':''}${escapeHtml(p.source||'')}</div>
-    <span class="status-badge ${statusClass}">${escapeHtml(statusLabel(p.status||'Watching'))}</span>
-    ${p.price ? `<div class="prop-price">${escapeHtml(p.price)}</div>` : ''}
-    ${auctionLine}
-    ${p.driveUrl ? `<a class="drive-link-btn" href="${escapeAttr(p.driveUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('drive_folder_btn')}</a>` : ''}
-    ${lastNote ? `<div class="prop-notes">${t('latest_note')} ${escapeHtml(lastNote.text)}</div>` : ''}
+  const dealBits = [p.propertyType, p.dealType, p.source].filter(Boolean).map(escapeHtml).join(' • ');
+  const countyBits = [p.county ? escapeHtml(p.county) : '', dealBits].filter(Boolean).join(' • ');
+  return `<div class="prop-card listing ${editMode?'editable':''}" data-id="${p.id}">
+    <div class="prop-photo">${p.photoUrl ? `<img src="${escapeAttr(p.photoUrl)}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='<span class=&quot;no-photo&quot;>${t('no_photo')}</span>'">` : `<span class="no-photo">${t('no_photo')}</span>`}${fitBadge(p)}</div>
+    <div class="prop-card-body">
+      ${p.price ? `<div class="prop-price-big">${escapeHtml(p.price)}</div>` : ''}
+      ${specsLine(p)}
+      <div class="prop-address">${escapeHtml(p.address||'(no address)')}</div>
+      ${countyBits ? `<div class="prop-meta">${countyBits}</div>` : ''}
+      <div class="prop-badges"><span class="status-badge ${statusClass}">${escapeHtml(statusLabel(p.status||'Watching'))}</span></div>
+      ${auctionLine}
+      <div class="card-actions">
+        ${p.driveUrl ? `<a class="drive-link-btn" href="${escapeAttr(p.driveUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('drive_folder_btn')}</a>` : ''}
+        ${p.listingUrl ? `<a class="listing-link-btn" href="${escapeAttr(p.listingUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('view_listing_btn')}</a>` : ''}
+      </div>
+      ${lastNote ? `<div class="prop-notes">${t('latest_note')} ${escapeHtml(lastNote.text)}</div>` : ''}
+    </div>
   </div>`;
 }
 
@@ -2484,7 +2541,7 @@ function renderProperties(content){
     const q = propSearch.toLowerCase();
     const matchesSearch = !q || (p.address||'').toLowerCase().includes(q) || (p.county||'').toLowerCase().includes(q);
     return matchesStatus && matchesSearch;
-  }).sort((a,b)=> (b.createdAt||0) - (a.createdAt||0));
+  }).sort((a,b)=> ((b.fitScore===undefined||b.fitScore==='' ? -1 : Number(b.fitScore)) - (a.fitScore===undefined||a.fitScore==='' ? -1 : Number(a.fitScore))) || ((b.createdAt||0)-(a.createdAt||0)));
 
   if(list.length===0){
     html += `<div class="empty-state"><div class="display">${t('no_properties_title')}</div><div>${editMode ? t('no_properties_edit') : t('no_properties_view')}</div></div>`;
@@ -2738,6 +2795,50 @@ function openPropertyModal(property){
           </select>
         </div>
       </div>
+      <div class="field-row">
+        <div class="field">
+          <label>${t('field_beds')}</label>
+          <input id="pBeds" inputmode="decimal" value="${property ? escapeAttr(property.beds||'') : ''}" placeholder="3">
+        </div>
+        <div class="field">
+          <label>${t('field_baths')}</label>
+          <input id="pBaths" inputmode="decimal" value="${property ? escapeAttr(property.baths||'') : ''}" placeholder="2">
+        </div>
+        <div class="field">
+          <label>${t('field_sqft')}</label>
+          <input id="pSqft" inputmode="numeric" value="${property ? escapeAttr(property.sqft||'') : ''}" placeholder="1,400">
+        </div>
+        <div class="field">
+          <label>${t('field_lot_size')}</label>
+          <input id="pLotSize" value="${property ? escapeAttr(property.lotSize||'') : ''}" placeholder="0.5 acres">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>${t('field_property_type')}</label>
+          <select id="pPropType">
+            ${['','House','Multifamily','Land','Commercial','Other'].map(s=>`<option value="${s}" ${property && (property.propertyType||'')===s?'selected':''}>${s||'—'}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>${t('field_deal_type')}</label>
+          <select id="pDealType">
+            ${['','Foreclosure','Pre-foreclosure','Auction','Sheriff/Trustee Sale','Estate Sale','Tax Lien','Wholesale','On-market'].map(s=>`<option value="${s}" ${property && (property.dealType||'')===s?'selected':''}>${s||'—'}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>${t('field_fit_score')}</label>
+          <input id="pFitScore" type="number" min="0" max="100" value="${property && property.fitScore!==undefined && property.fitScore!=='' ? property.fitScore : ''}" placeholder="0–100">
+        </div>
+      </div>
+      <div class="field">
+        <label>${t('field_photo_url')}</label>
+        <input id="pPhotoUrl" type="url" value="${property ? escapeAttr(property.photoUrl||'') : ''}" placeholder="https://…">
+      </div>
+      <div class="field">
+        <label>${t('field_listing_url')}</label>
+        <input id="pListingUrl" type="url" value="${property ? escapeAttr(property.listingUrl||'') : ''}" placeholder="https://…">
+      </div>
       <div class="field">
         <label>${t('field_auction_datetime')}</label>
         <div class="field-row" style="margin-top:0;">
@@ -2830,17 +2931,17 @@ function openPropertyModal(property){
       }
       // square footage: number followed by sq ft / sqft / square feet
       const sqftMatch = raw.match(/([\d,]{3,6})\s*(?:sq\.?\s?ft\.?|sqft|square\s?feet)/i);
-      if(sqftMatch) foundBits.push('Sq ft: ' + sqftMatch[1]);
+      if(sqftMatch){ document.getElementById('pSqft').value = sqftMatch[1]; foundBits.push('Sq ft: ' + sqftMatch[1]); }
       // beds / baths, since they're usually right next to sqft on listing pages
       const bedsMatch = raw.match(/(\d+(?:\.\d+)?)\s*(?:bed|beds|bd|bedrooms?)\b/i);
-      if(bedsMatch) foundBits.push('Beds: ' + bedsMatch[1]);
+      if(bedsMatch){ document.getElementById('pBeds').value = bedsMatch[1]; foundBits.push('Beds: ' + bedsMatch[1]); }
       const bathsMatch = raw.match(/(\d+(?:\.\d+)?)\s*(?:bath|baths|ba|bathrooms?)\b/i);
-      if(bathsMatch) foundBits.push('Baths: ' + bathsMatch[1]);
+      if(bathsMatch){ document.getElementById('pBaths').value = bathsMatch[1]; foundBits.push('Baths: ' + bathsMatch[1]); }
       // lot size: acres or sq ft lot
       const lotAcreMatch = raw.match(/([\d.]+)\s*acres?\b/i);
       const lotSqftMatch = raw.match(/lot\s*(?:size)?\s*[:\-]?\s*([\d,]{3,7})\s*(?:sq\.?\s?ft\.?|sqft)/i);
-      if(lotAcreMatch) foundBits.push('Lot size: ' + lotAcreMatch[1] + ' acres');
-      else if(lotSqftMatch) foundBits.push('Lot size: ' + lotSqftMatch[1] + ' sq ft');
+      if(lotAcreMatch){ document.getElementById('pLotSize').value = lotAcreMatch[1] + ' acres'; foundBits.push('Lot size: ' + lotAcreMatch[1] + ' acres'); }
+      else if(lotSqftMatch){ document.getElementById('pLotSize').value = lotSqftMatch[1] + ' sq ft'; foundBits.push('Lot size: ' + lotSqftMatch[1] + ' sq ft'); }
       // year built
       const yearMatch = raw.match(/built\s*(?:in)?\s*[:\-]?\s*(19|20)\d{2}/i);
       if(yearMatch) foundBits.push('Year built: ' + yearMatch[0].match(/(19|20)\d{2}/)[0]);
@@ -2876,6 +2977,15 @@ function openPropertyModal(property){
       source: document.getElementById('pSource').value,
       price: document.getElementById('pPrice').value.trim(),
       status: document.getElementById('pStatus').value,
+      beds: document.getElementById('pBeds').value.trim(),
+      baths: document.getElementById('pBaths').value.trim(),
+      sqft: document.getElementById('pSqft').value.trim(),
+      lotSize: document.getElementById('pLotSize').value.trim(),
+      propertyType: document.getElementById('pPropType').value,
+      dealType: document.getElementById('pDealType').value,
+      fitScore: document.getElementById('pFitScore').value.trim()==='' ? '' : Math.max(0, Math.min(100, Number(document.getElementById('pFitScore').value))),
+      photoUrl: document.getElementById('pPhotoUrl').value.trim() || null,
+      listingUrl: document.getElementById('pListingUrl').value.trim() || null,
       auctionDate: document.getElementById('pAuctionDate').value || null,
       auctionTime: document.getElementById('pAuctionTime').value || null,
       driveUrl: document.getElementById('pDriveUrl').value.trim() || null,
