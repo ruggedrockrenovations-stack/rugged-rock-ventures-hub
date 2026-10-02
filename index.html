@@ -309,6 +309,8 @@
   }
   .prop-card.editable{cursor:pointer;}
   .prop-card.editable:hover{box-shadow:0 3px 10px rgba(43,36,32,0.1);}
+  .drive-link-btn{display:inline-block;margin-top:4px;padding:8px 14px;border-radius:8px;background:#e8eefc;color:#1a56db;font-size:13px;font-weight:700;text-decoration:none;width:fit-content;}
+  .drive-link-btn:active{background:#d7e2fa;}
   .prop-address{font-size:17px;font-weight:700;color:var(--charcoal);line-height:1.25;}
   .prop-meta{font-size:12.5px;color:#8a8175;}
   .status-badge{
@@ -1037,7 +1039,7 @@ const TRANSLATIONS = {
     field_customer:'Customer (optional — for client jobs)', field_customer_ph:'Leave blank for a Ventures-only job',
     field_crew:'Crew', field_notes:'Notes', field_job_address:'Job / Address',
     field_county:'County', field_source:'Source', field_price:'Price', field_status:'Status',
-    field_auction_datetime:'Auction date & time (optional — shows on calendar)',
+    field_auction_datetime:'Auction date & time (optional — shows on calendar)', field_drive_url:'Drive folder link', drive_folder_btn:'📁 Drive Folder',
     field_cover_photo:'Cover photo URL', photo_url_hint:'Paste a link to a hosted photo — this can\'t upload from your camera roll directly.',
     field_purchase:'Purchase price', field_reno:'Reno cost', field_sell:'Sell price', field_sold_date:'Sold date (used for the year-by-year counter)',
     field_before_photos:'Before photo URLs (one per line)', field_after_photos:'After photo URLs (one per line)', field_story:'Story / notes',
@@ -1131,7 +1133,7 @@ const TRANSLATIONS = {
     field_customer:'Cliente (opcional — para trabajos con clientes)', field_customer_ph:'Déjalo en blanco si es solo para Ventures',
     field_crew:'Equipo', field_notes:'Notas', field_job_address:'Trabajo / Dirección',
     field_county:'Condado', field_source:'Fuente', field_price:'Precio', field_status:'Estado',
-    field_auction_datetime:'Fecha y hora de subasta (opcional — aparece en el calendario)',
+    field_auction_datetime:'Fecha y hora de subasta (opcional — aparece en el calendario)', field_drive_url:'Enlace a la carpeta de Drive', drive_folder_btn:'📁 Carpeta de Drive',
     field_cover_photo:'URL de foto de portada', photo_url_hint:'Pega un enlace a una foto ya alojada — esto no puede subir fotos directamente desde tu carrete.',
     field_purchase:'Precio de compra', field_reno:'Costo de renovación', field_sell:'Precio de venta', field_sold_date:'Fecha de venta (para el contador por año)',
     field_before_photos:'URLs de fotos "antes" (una por línea)', field_after_photos:'URLs de fotos "después" (una por línea)', field_story:'Historia / notas',
@@ -2455,6 +2457,7 @@ function propCardHtml(p){
     <span class="status-badge ${statusClass}">${escapeHtml(statusLabel(p.status||'Watching'))}</span>
     ${p.price ? `<div class="prop-price">${escapeHtml(p.price)}</div>` : ''}
     ${auctionLine}
+    ${p.driveUrl ? `<a class="drive-link-btn" href="${escapeAttr(p.driveUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('drive_folder_btn')}</a>` : ''}
     ${lastNote ? `<div class="prop-notes">${t('latest_note')} ${escapeHtml(lastNote.text)}</div>` : ''}
   </div>`;
 }
@@ -2719,6 +2722,10 @@ function openPropertyModal(property){
         </div>
       </div>
       <div class="field">
+        <label>${t('field_drive_url')}</label>
+        <input id="pDriveUrl" type="url" value="${property ? escapeAttr(property.driveUrl||'') : ''}" placeholder="https://drive.google.com/drive/folders/...">
+      </div>
+      <div class="field">
         <label>${t('field_notes')}</label>
         <div class="notelog" id="noteLogList"></div>
         <div class="note-add-row">
@@ -2847,6 +2854,7 @@ function openPropertyModal(property){
       status: document.getElementById('pStatus').value,
       auctionDate: document.getElementById('pAuctionDate').value || null,
       auctionTime: document.getElementById('pAuctionTime').value || null,
+      driveUrl: document.getElementById('pDriveUrl').value.trim() || null,
       noteLog: noteLog,
       createdAt: property ? property.createdAt : Date.now()
     };
