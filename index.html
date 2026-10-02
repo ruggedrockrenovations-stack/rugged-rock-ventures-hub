@@ -333,6 +333,8 @@
   .status-won{background:var(--moss);}
   .status-active{background:var(--rust);}
   .status-passed{background:#a89e91;}
+  .status-flip{background:var(--brick);}
+  .status-reno{background:var(--slate);}
 
   .active-section{margin-bottom:24px;}
   .active-section-title{
@@ -1076,6 +1078,7 @@ const TRANSLATIONS = {
     fit_label:'Fit', view_listing_btn:'View Listing', no_photo:'No photo yet', new_badge:'New',
     field_auction_datetime:'Auction date & time (optional — shows on calendar)', field_drive_url:'Drive folder link', drive_folder_btn:'📁 Drive Folder',
     field_phase:'Phase', phase_bid:'Bid Phase', phase_progress:'In Progress', phase_complete:'Complete',
+    field_job_type:'Job type', job_type_flip:'Flip', job_type_reno:'Renovation',
     field_cover_photo:'Cover photo URL', photo_url_hint:'Paste a link to a hosted photo — this can\'t upload from your camera roll directly.',
     field_purchase:'Purchase price', field_reno:'Reno cost', field_sell:'Sell price', field_sold_date:'Sold date (used for the year-by-year counter)',
     field_before_photos:'Before photo URLs (one per line)', field_after_photos:'After photo URLs (one per line)', field_story:'Story / notes',
@@ -1176,6 +1179,7 @@ const TRANSLATIONS = {
     fit_label:'Afinidad', view_listing_btn:'Ver anuncio', no_photo:'Sin foto aún', new_badge:'Nuevo',
     field_auction_datetime:'Fecha y hora de subasta (opcional — aparece en el calendario)', field_drive_url:'Enlace a la carpeta de Drive', drive_folder_btn:'📁 Carpeta de Drive',
     field_phase:'Fase', phase_bid:'Fase de oferta', phase_progress:'En progreso', phase_complete:'Completado',
+    field_job_type:'Tipo de trabajo', job_type_flip:'Flip', job_type_reno:'Renovación',
     field_cover_photo:'URL de foto de portada', photo_url_hint:'Pega un enlace a una foto ya alojada — esto no puede subir fotos directamente desde tu carrete.',
     field_purchase:'Precio de compra', field_reno:'Costo de renovación', field_sell:'Precio de venta', field_sold_date:'Fecha de venta (para el contador por año)',
     field_before_photos:'URLs de fotos "antes" (una por línea)', field_after_photos:'URLs de fotos "después" (una por línea)', field_story:'Historia / notas',
@@ -2594,9 +2598,13 @@ function jobPhaseInfo(job){
 function activeJobCardHtml(job){
   const lastNote = (job.noteLog && job.noteLog.length) ? job.noteLog[job.noteLog.length-1] : null;
   const pi = jobPhaseInfo(job);
+  const jt = job.jobType || 'Renovation';
+  const jtCls = jt==='Flip' ? 'status-flip' : 'status-reno';
+  const jtLabel = t(jt==='Flip' ? 'job_type_flip' : 'job_type_reno');
   return `<div class="prop-card ${editMode?'editable':''}" data-source="standalone" data-id="${job.id}">
     <div class="prop-address">${escapeHtml(job.title||'(untitled job)')}</div>
     <span class="status-badge ${pi.cls}">${escapeHtml(pi.label)}</span>
+    <span class="status-badge ${jtCls}" style="margin-left:6px;">${escapeHtml(jtLabel)}</span>
     ${job.crew && job.crew.length ? `<div class="prop-meta">${t('crew_label')} ${job.crew.map(escapeHtml).join(', ')}</div>` : ''}
     ${job.driveUrl ? `<a class="drive-link-btn" href="${escapeAttr(job.driveUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('drive_folder_btn')}</a>` : ''}
     ${lastNote ? `<div class="prop-notes">${t('latest_note')} ${escapeHtml(lastNote.text)}</div>` : ''}
@@ -2665,6 +2673,12 @@ function openActiveJobModal(job){
         <label>${t('field_phase')}</label>
         <select id="ajPhase">
           ${['Bid Phase','In Progress','Complete'].map(s=>`<option value="${s}" ${job && (job.phase||'In Progress')===s?'selected':''}>${t(s==='Bid Phase'?'phase_bid':s==='Complete'?'phase_complete':'phase_progress')}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>${t('field_job_type')}</label>
+        <select id="ajJobType">
+          ${['Renovation','Flip'].map(s=>`<option value="${s}" ${job && (job.jobType||'Renovation')===s?'selected':''}>${t(s==='Flip'?'job_type_flip':'job_type_reno')}</option>`).join('')}
         </select>
       </div>
       <div class="field">
@@ -2751,6 +2765,7 @@ function openActiveJobModal(job){
       id: job ? job.id : uid(),
       title,
       phase: document.getElementById('ajPhase').value,
+      jobType: document.getElementById('ajJobType').value,
       driveUrl: document.getElementById('ajDriveUrl').value.trim() || null,
       crew: pickedCrew,
       noteLog,
