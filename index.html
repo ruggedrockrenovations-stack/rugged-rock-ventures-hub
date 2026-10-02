@@ -369,6 +369,11 @@
   }
   .prop-fit.high{background:#4a7c59;}
   .prop-fit.mid{background:#c08a3c;}
+  .prop-new{
+    position:absolute;top:8px;right:8px;font-size:11px;font-weight:800;letter-spacing:.05em;
+    padding:4px 10px;border-radius:12px;color:var(--rust-dark);background:#fff;
+    box-shadow:0 1px 4px rgba(43,36,32,.18);text-transform:uppercase;
+  }
   .prop-card-body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:5px;}
   .prop-price-big{font-size:21px;font-weight:800;color:var(--charcoal);line-height:1.1;}
   .prop-specs{font-size:13px;font-weight:600;color:var(--ink);}
@@ -1065,7 +1070,7 @@ const TRANSLATIONS = {
     field_property_type:'Property type', field_deal_type:'Deal type', field_fit_score:'Fit score (0–100)',
     field_photo_url:'Photo URL', field_listing_url:'Listing URL',
     spec_beds_short:'bd', spec_baths_short:'ba', spec_sqft_short:'sqft',
-    fit_label:'Fit', view_listing_btn:'View Listing', no_photo:'No photo yet',
+    fit_label:'Fit', view_listing_btn:'View Listing', no_photo:'No photo yet', new_badge:'New',
     field_auction_datetime:'Auction date & time (optional — shows on calendar)', field_drive_url:'Drive folder link', drive_folder_btn:'📁 Drive Folder',
     field_phase:'Phase', phase_bid:'Bid Phase', phase_progress:'In Progress', phase_complete:'Complete',
     field_cover_photo:'Cover photo URL', photo_url_hint:'Paste a link to a hosted photo — this can\'t upload from your camera roll directly.',
@@ -1165,7 +1170,7 @@ const TRANSLATIONS = {
     field_property_type:'Tipo de propiedad', field_deal_type:'Tipo de oferta', field_fit_score:'Puntuación (0–100)',
     field_photo_url:'URL de foto', field_listing_url:'URL del anuncio',
     spec_beds_short:'hab', spec_baths_short:'baños', spec_sqft_short:'pc',
-    fit_label:'Afinidad', view_listing_btn:'Ver anuncio', no_photo:'Sin foto aún',
+    fit_label:'Afinidad', view_listing_btn:'Ver anuncio', no_photo:'Sin foto aún', new_badge:'Nuevo',
     field_auction_datetime:'Fecha y hora de subasta (opcional — aparece en el calendario)', field_drive_url:'Enlace a la carpeta de Drive', drive_folder_btn:'📁 Carpeta de Drive',
     field_phase:'Fase', phase_bid:'Fase de oferta', phase_progress:'En progreso', phase_complete:'Completado',
     field_cover_photo:'URL de foto de portada', photo_url_hint:'Pega un enlace a una foto ya alojada — esto no puede subir fotos directamente desde tu carrete.',
@@ -2475,6 +2480,10 @@ function statusLabel(status){
   return t(map[status] || 'watching');
 }
 
+function isNewProp(p){
+  return p.createdAt && (Date.now() - Number(p.createdAt)) < 7*24*60*60*1000;
+}
+
 function fitBadge(p){
   const s = (p.fitScore===undefined || p.fitScore===null || p.fitScore==='') ? null : Number(p.fitScore);
   if(s===null || isNaN(s)) return '';
@@ -2504,7 +2513,7 @@ function propCardHtml(p){
   const dealBits = [p.propertyType, p.dealType, p.source].filter(Boolean).map(escapeHtml).join(' • ');
   const countyBits = [p.county ? escapeHtml(p.county) : '', dealBits].filter(Boolean).join(' • ');
   return `<div class="prop-card listing ${editMode?'editable':''}" data-id="${p.id}">
-    <div class="prop-photo">${p.photoUrl ? `<img src="${escapeAttr(p.photoUrl)}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='<span class=&quot;no-photo&quot;>${t('no_photo')}</span>'">` : `<span class="no-photo">${t('no_photo')}</span>`}${fitBadge(p)}</div>
+    <div class="prop-photo">${p.photoUrl ? `<img src="${escapeAttr(p.photoUrl)}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='<span class=&quot;no-photo&quot;>${t('no_photo')}</span>'">` : `<span class="no-photo">${t('no_photo')}</span>`}${fitBadge(p)}${isNewProp(p) ? `<span class="prop-new">${t('new_badge')}</span>` : ''}</div>
     <div class="prop-card-body">
       ${p.price ? `<div class="prop-price-big">${escapeHtml(p.price)}</div>` : ''}
       ${specsLine(p)}
