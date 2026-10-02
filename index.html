@@ -2294,6 +2294,8 @@ function openGoogleEventModal(ev){
       <button class="modal-close" id="closeM">&times;</button>
       <h3>📅 ${escapeHtml(ev.title)}</h3>
       <div class="detail-row"><strong>${t('field_date')}:</strong> ${fmtDate(ev.date)}${(ev.time && ev.time!=='00:00') ? ' '+fmtTime(ev.time) : ''}</div>
+      ${ev.location ? `<div class="detail-row"><strong>${t('field_address')}:</strong> ${escapeHtml(ev.location)}</div>` : ''}
+      ${ev.description ? `<div class="detail-row"><strong>${t('field_notes')}:</strong> ${escapeHtml(ev.description)}</div>` : ''}
       <div class="quickfill-hint" style="margin-top:8px;">${currentLang==='es' ? 'Sincronizado desde Google Calendar — para editar o eliminar, hazlo en Google Calendar.' : 'Synced from Google Calendar — to edit or remove, do it in Google Calendar.'}</div>
     </div>
   </div>`;
