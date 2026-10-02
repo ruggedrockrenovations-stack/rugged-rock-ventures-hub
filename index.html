@@ -3687,6 +3687,13 @@ function openFlipModal(flip){
 
 // ---------------- utils ----------------
 // ---------------- copy to clipboard ----------------
+// ---------------- service worker (enables Android one-tap install) ----------------
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
+
 // ---------------- Add to Home Screen ----------------
 let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', (e)=>{
