@@ -2601,13 +2601,28 @@ function activeJobCardHtml(job){
   const jt = job.jobType || 'Renovation';
   const jtCls = jt==='Flip' ? 'status-flip' : 'status-reno';
   const jtLabel = t(jt==='Flip' ? 'job_type_flip' : 'job_type_reno');
+  const badges = `<span class="status-badge ${pi.cls}">${escapeHtml(pi.label)}</span><span class="status-badge ${jtCls}" style="margin-left:6px;">${escapeHtml(jtLabel)}</span>`;
+  const crewLine = job.crew && job.crew.length ? `<div class="prop-meta">${t('crew_label')} ${job.crew.map(escapeHtml).join(', ')}</div>` : '';
+  const driveBtn = job.driveUrl ? `<a class="drive-link-btn" href="${escapeAttr(job.driveUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('drive_folder_btn')}</a>` : '';
+  const noteLine = lastNote ? `<div class="prop-notes">${t('latest_note')} ${escapeHtml(lastNote.text)}</div>` : '';
+  if(jt==='Flip'){
+    return `<div class="prop-card listing ${editMode?'editable':''}" data-source="standalone" data-id="${job.id}">
+    <div class="prop-photo">${job.photoUrl ? `<img src="${escapeAttr(job.photoUrl)}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='<span class=&quot;no-photo&quot;>${t('no_photo')}</span>'">` : `<span class="no-photo">${t('no_photo')}</span>`}</div>
+    <div class="prop-card-body">
+      <div class="prop-address">${escapeHtml(job.title||'(untitled job)')}</div>
+      ${crewLine}
+      <div class="prop-badges">${badges}</div>
+      ${driveBtn ? `<div class="card-actions">${driveBtn}</div>` : ''}
+      ${noteLine}
+    </div>
+  </div>`;
+  }
   return `<div class="prop-card ${editMode?'editable':''}" data-source="standalone" data-id="${job.id}">
     <div class="prop-address">${escapeHtml(job.title||'(untitled job)')}</div>
-    <span class="status-badge ${pi.cls}">${escapeHtml(pi.label)}</span>
-    <span class="status-badge ${jtCls}" style="margin-left:6px;">${escapeHtml(jtLabel)}</span>
-    ${job.crew && job.crew.length ? `<div class="prop-meta">${t('crew_label')} ${job.crew.map(escapeHtml).join(', ')}</div>` : ''}
-    ${job.driveUrl ? `<a class="drive-link-btn" href="${escapeAttr(job.driveUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('drive_folder_btn')}</a>` : ''}
-    ${lastNote ? `<div class="prop-notes">${t('latest_note')} ${escapeHtml(lastNote.text)}</div>` : ''}
+    ${badges}
+    ${crewLine}
+    ${driveBtn}
+    ${noteLine}
   </div>`;
 }
 
@@ -2690,6 +2705,10 @@ function openActiveJobModal(job){
         <input id="ajDriveUrl" type="url" value="${job ? escapeAttr(job.driveUrl||'') : ''}" placeholder="https://drive.google.com/drive/folders/...">
       </div>
       <div class="field">
+        <label>${t('field_cover_photo')}</label>
+        <input id="ajPhotoUrl" type="url" value="${job ? escapeAttr(job.photoUrl||'') : ''}" placeholder="https://…">
+      </div>
+      <div class="field">
         <label>${t('field_notes')}</label>
         <div class="notelog" id="ajNoteLogList"></div>
         <div class="note-add-row">
@@ -2766,6 +2785,7 @@ function openActiveJobModal(job){
       title,
       phase: document.getElementById('ajPhase').value,
       jobType: document.getElementById('ajJobType').value,
+      photoUrl: document.getElementById('ajPhotoUrl').value.trim() || null,
       driveUrl: document.getElementById('ajDriveUrl').value.trim() || null,
       crew: pickedCrew,
       noteLog,
