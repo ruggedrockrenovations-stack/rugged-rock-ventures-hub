@@ -401,6 +401,7 @@
   .prop-badges{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
   .listing-link-btn{display:inline-block;margin-top:4px;padding:8px 14px;border-radius:8px;background:#eef2f7;color:#33475f;font-size:13px;font-weight:700;text-decoration:none;width:fit-content;border:1px solid var(--line);}
   .directions-btn{display:inline-block;margin-top:4px;padding:8px 14px;border-radius:8px;background:#e9f5ec;color:#1e7a3c;font-size:13px;font-weight:700;text-decoration:none;width:fit-content;}
+  .finished-btn{display:inline-block;margin-top:4px;padding:8px 14px;border-radius:8px;background:#2f9e63;color:#fff;font-size:13px;font-weight:700;border:none;width:fit-content;cursor:pointer;}
   .listing-link-btn:active{background:#e2e9f2;}
   .card-actions{display:flex;flex-wrap:wrap;gap:8px;}
   .empty-state{
@@ -1115,6 +1116,7 @@ const TRANSLATIONS = {
     address_required:'Address is required.', title_date_required:'Title and date are required.', job_name_required:'Give the job a name or address.',
     delete_entry_confirm:'Delete this entry?', delete_property_confirm:'Delete this property? This will also remove its calendar entry if it has one.',
     delete_active_confirm:'Delete this active job?', delete_flip_confirm:'Delete this flip from the Hall of Fame?',
+    mark_finished_btn:'✓ Finished', finish_job_confirm:'Mark this job finished and move it to the Hall of Fame?',
     could_not_save:'Could not save — check your connection and try again.', could_not_save_settings:'Could not save settings — check your connection and try again.',
     set_password_first:"No editor password is set yet. Create one now — you'll use this to unlock editing next time (share it only with whoever should be able to edit).",
     enter_editor_password:'Enter the editor password:', password_no_match:"That password doesn't match. Try again.",
@@ -1220,6 +1222,7 @@ const TRANSLATIONS = {
     address_required:'La dirección es obligatoria.', title_date_required:'El título y la fecha son obligatorios.', job_name_required:'Dale un nombre o dirección al trabajo.',
     delete_entry_confirm:'¿Eliminar esta entrada?', delete_property_confirm:'¿Eliminar esta propiedad? Esto también eliminará su entrada en el calendario si tiene una.',
     delete_active_confirm:'¿Eliminar este trabajo activo?', delete_flip_confirm:'¿Eliminar esta casa del Salón de la Fama?',
+    mark_finished_btn:'✓ Terminado', finish_job_confirm:'¿Marcar este trabajo como terminado y moverlo al Salón de la Fama?',
     could_not_save:'No se pudo guardar — revisa tu conexión e intenta de nuevo.', could_not_save_settings:'No se pudo guardar la configuración — revisa tu conexión e intenta de nuevo.',
     set_password_first:'Aún no se ha configurado una contraseña de edición. Crea una ahora — la usarás para desbloquear la edición la próxima vez (compártela solo con quien deba poder editar).',
     enter_editor_password:'Ingresa la contraseña de edición:', password_no_match:'Esa contraseña no coincide. Intenta de nuevo.',
@@ -2702,6 +2705,7 @@ function activeJobCardHtml(job){
   const crewLine = job.crew && job.crew.length ? `<div class="prop-meta">${t('crew_label')} ${job.crew.map(escapeHtml).join(', ')}</div>` : '';
   const driveBtn = job.driveUrl ? `<a class="drive-link-btn" href="${escapeAttr(job.driveUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('drive_folder_btn')}</a>` : '';
   const dirBtn = job.title ? `<a class="directions-btn" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(job.title)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('directions_btn')}</a>` : '';
+  const finishBtn = editMode ? `<button class="finished-btn" onclick="event.stopPropagation();finishActiveJob('${job.id}')">${t('mark_finished_btn')}</button>` : '';
   const noteLine = lastNote ? `<div class="prop-notes">${t('latest_note')} ${escapeHtml(lastNote.text)}</div>` : '';
   if(jt==='Flip'){
     return `<div class="prop-card listing ${editMode?'editable':''}" data-source="standalone" data-id="${job.id}">
@@ -2710,7 +2714,7 @@ function activeJobCardHtml(job){
       <div class="prop-address">${escapeHtml(job.title||'(untitled job)')}</div>
       ${crewLine}
       <div class="prop-badges">${badges}</div>
-      ${(driveBtn || dirBtn) ? `<div class="card-actions">${driveBtn}${dirBtn}</div>` : ''}
+      ${(driveBtn || dirBtn || finishBtn) ? `<div class="card-actions">${driveBtn}${dirBtn}${finishBtn}</div>` : ''}
       ${noteLine}
     </div>
   </div>`;
@@ -2719,9 +2723,32 @@ function activeJobCardHtml(job){
     <div class="prop-address">${escapeHtml(job.title||'(untitled job)')}</div>
     ${badges}
     ${crewLine}
-    ${driveBtn}${dirBtn}
+    ${(driveBtn || dirBtn || finishBtn) ? `<div class="card-actions">${driveBtn}${dirBtn}${finishBtn}</div>` : ''}
     ${noteLine}
   </div>`;
+}
+
+function finishActiveJob(id){
+  const job = activeJobs.find(j=>String(j.id)===String(id));
+  if(!job) return;
+  showConfirm(t('finish_job_confirm'), async ()=>{
+    const entry = {
+      id: uid(),
+      address: job.title || '',
+      coverPhoto: job.photoUrl || '',
+      driveUrl: job.driveUrl || '',
+      purchasePrice: '', renoCost: '', sellPrice: '',
+      soldDate: todayISO(),
+      beforePhotos: [], afterPhotos: [],
+      story: (job.noteLog||[]).map(n=>`${n.date? n.date+': ' : ''}${n.text||''}`.trim()).join('\n'),
+      createdAt: Date.now()
+    };
+    flips.push(entry);
+    activeJobs = activeJobs.filter(j=>String(j.id)!==String(id));
+    await saveFlips();
+    await saveActiveJobs();
+    render();
+  });
 }
 
 function renderActiveJobs(content){
@@ -3841,6 +3868,7 @@ function openFlipDetail(flip){
         <div class="flip-stat"><div class="flip-stat-label">${t('stat_profit')}</div><div class="flip-stat-value" style="color:${hasProfit ? (profit<0?'var(--brick)':'var(--moss)') : 'inherit'};">${hasProfit ? (profit<0?'-':'')+'$'+Math.abs(profit).toLocaleString() : '—'}</div></div>
       </div>
       ${flip.soldDate ? `<div style="font-size:12.5px;color:#8a8175;margin-bottom:14px;">${t('sold_label')} ${fmtDate(flip.soldDate)}</div>` : ''}
+      ${flip.driveUrl ? `<div style="margin-bottom:14px;"><a class="drive-link-btn" href="${escapeAttr(flip.driveUrl)}" target="_blank" rel="noopener">${t('drive_folder_btn')}</a></div>` : ''}
       ${flip.story ? `<div class="flip-photo-section"><div class="flip-photo-section-title">${t('story_label')}</div><div class="flip-story">${escapeHtml(flip.story)}</div></div>` : ''}
       ${flip.beforePhotos && flip.beforePhotos.length ? `<div class="flip-photo-section"><div class="flip-photo-section-title">${t('before_label')}</div><div class="flip-photo-grid">${flip.beforePhotos.map(u=>`<img src="${escapeAttr(u)}" onerror="this.style.display='none'">`).join('')}</div></div>` : ''}
       ${flip.afterPhotos && flip.afterPhotos.length ? `<div class="flip-photo-section"><div class="flip-photo-section-title">${t('after_label')}</div><div class="flip-photo-grid">${flip.afterPhotos.map(u=>`<img src="${escapeAttr(u)}" onerror="this.style.display='none'">`).join('')}</div></div>` : ''}
