@@ -674,6 +674,20 @@
     border-bottom:1px solid var(--line);
     transform:rotate(45deg);
   }
+  .chat-hint-close{
+    position:absolute;
+    top:-9px;right:-9px;
+    width:22px;height:22px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:var(--white);
+    color:#8a8175;
+    font-size:14px;line-height:1;
+    cursor:pointer;
+    box-shadow:0 2px 6px rgba(43,36,32,0.18);
+    padding:0;
+  }
+  .chat-hint-close:hover{color:var(--ink);}
   @keyframes chatHintFloat{
     0%,100%{transform:translateY(0);}
     50%{transform:translateY(-4px);}
@@ -991,6 +1005,7 @@
   <button type="button" id="undoBtn"></button>
 </div>
 <div id="chatHint" class="chat-hint" style="display:none;">
+  <button id="chatHintClose" class="chat-hint-close" aria-label="Dismiss">×</button>
   <span id="chatHintText">How can I help?</span>
 </div>
 <button id="chatFab" class="chat-fab" style="display:none;">💬</button>
@@ -1059,6 +1074,8 @@ let hofUnlocked = false; // session-only unlock for non-editor viewers
 let notifPrefs = { myName:'', notifyAuctions:true, notifyMyJobs:true, notifyAllJobs:false };
 let chatHistory = []; // session-only: [{role:'user'|'assistant', text}]
 let chatOpen = false;
+let chatHintDismissed = false;
+try{ chatHintDismissed = localStorage.getItem('rrv_chat_hint_dismissed')==='1'; }catch(e){}
 let settings = { editorPassword: null };
 let editMode = false;
 let activeTab = 'calendar';
@@ -2136,7 +2153,7 @@ function render(){
   document.getElementById('chatHintText').textContent = t('chat_hint');
   if(editMode && !chatOpen){
     chatFab.style.display = 'flex';
-    chatHint.style.display = 'block';
+    chatHint.style.display = chatHintDismissed ? 'none' : 'block';
   }else{
     chatFab.style.display = 'none';
     chatHint.style.display = 'none';
@@ -4133,6 +4150,12 @@ document.querySelectorAll('.lang-btn').forEach(b=>{
 // ---------------- chat wiring ----------------
 document.getElementById('chatFab').onclick = openChat;
 document.getElementById('chatHint').onclick = openChat;
+document.getElementById('chatHintClose').onclick = (e)=>{
+  e.stopPropagation();
+  chatHintDismissed = true;
+  try{ localStorage.setItem('rrv_chat_hint_dismissed','1'); }catch(err){}
+  document.getElementById('chatHint').style.display = 'none';
+};
 document.getElementById('undoBtn').onclick = undoLastDelete;
 document.getElementById('chatCloseBtn').onclick = closeChat;
 document.getElementById('chatSendBtn').onclick = sendChatMessage;
