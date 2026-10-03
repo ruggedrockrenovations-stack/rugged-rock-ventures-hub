@@ -278,6 +278,15 @@
   .cal-search-info{font-size:12.5px;color:#8a8175;margin-bottom:10px;min-height:18px;}
   .chip-match{outline:3px solid var(--amber);outline-offset:1px;}
   .cal-cell.match-day{border-color:var(--amber);border-width:2px;background:#fdf6ec;}
+  .cal-zoom-btn{padding:8px 12px;border-radius:8px;border:1px solid var(--line-soft);background:var(--card);font-size:13px;font-weight:700;color:#5b5348;}
+  @media (max-width:640px){
+    .cal-grid.zoomed-out{grid-template-columns:repeat(7,minmax(0,1fr));overflow:visible;}
+    .cal-grid.zoomed-out .cal-cell{min-height:60px;padding:4px;}
+    .cal-grid.zoomed-out .cal-dow{font-size:8px;}
+    .cal-grid.zoomed-out .cal-daynum{font-size:10px;}
+    .cal-grid.zoomed-out .chip{font-size:9px;padding:2px 4px;white-space:nowrap;}
+    .cal-grid.zoomed-out .cal-add-day{display:none;}
+  }
 
   /* ---------- properties ---------- */
   .filter-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;align-items:center;}
@@ -1056,6 +1065,7 @@ let calSearchJobIds = new Set();
 let calSearchGcalIds = new Set();
 let calSearchDay = null;
 let calSearchTimer = null;
+let calZoomedOut = false;
 let propFilter = 'All';
 let propSearch = '';
 let dataLoaded = false;
@@ -1144,6 +1154,7 @@ const TRANSLATIONS = {
     dtd_splitting:'Organizing tasks…', dtd_split_error:'Couldn\'t organize that into tasks — try again.', dtd_clear_confirm:'Clear all completed tasks for this person and day?',
     calendar_desc:'Jobs, auctions, and anything else on the schedule — tap a day to add something.',
     cal_search_ph:'Search events or a date…', cal_search_found:'matches found', cal_search_none:'No matches',
+    cal_zoom_out:'⤢ Whole month', cal_zoom_in:'⤡ Readable',
     dailytodo_desc:'Quick daily rundowns for the crew. Talk it through, they check it off as they go.',
     active_desc:'Properties and jobs currently being worked, all in one place.',
     properties_desc:'Leads you\'re watching, bidding on, or have already won.',
@@ -1247,6 +1258,7 @@ const TRANSLATIONS = {
     dtd_splitting:'Organizando tareas…', dtd_split_error:'No se pudo organizar en tareas — intenta de nuevo.', dtd_clear_confirm:'¿Borrar todas las tareas completadas de esta persona en este día?',
     calendar_desc:'Trabajos, subastas y cualquier otra cosa en el calendario — toca un día para agregar algo.',
     cal_search_ph:'Busca eventos o una fecha…', cal_search_found:'resultados', cal_search_none:'Sin resultados',
+    cal_zoom_out:'⤢ Mes completo', cal_zoom_in:'⤡ Legible',
     dailytodo_desc:'Resúmenes diarios rápidos para el equipo. Cuéntalo y ellos lo van marcando.',
     active_desc:'Propiedades y trabajos que se están trabajando actualmente, todo en un solo lugar.',
     properties_desc:'Propiedades que estás observando, en las que ofertaste, o que ya ganaste.',
@@ -2292,6 +2304,7 @@ function renderCalendar(content){
       <button id="nextMonth">&#8250;</button>
     </div>
     ${editMode ? `<button class="add-btn" id="addJobBtn">${t('add_to_calendar')}</button>` : ''}
+    <button id="calZoomBtn" class="cal-zoom-btn">${calZoomedOut ? t('cal_zoom_in') : t('cal_zoom_out')}</button>
   </div>
   <div class="cal-search-row">
     <input id="calSearch" class="cal-search" placeholder="${t('cal_search_ph')}" value="${escapeAttr(calSearch)}" autocomplete="off">
@@ -2299,7 +2312,7 @@ function renderCalendar(content){
   </div>
   <div id="calSearchInfo" class="cal-search-info"></div>`;
 
-  html += '<div class="cal-grid">';
+  html += `<div class="cal-grid${calZoomedOut?' zoomed-out':''}">`;
   t('days').forEach(d=>{
     html += `<div class="cal-dow">${d}</div>`;
   });
@@ -2340,6 +2353,9 @@ function renderCalendar(content){
   };
   const addBtn = document.getElementById('addJobBtn');
   if(addBtn) addBtn.onclick = ()=>openJobModal(null, todayISO());
+
+  const calZoomBtn = document.getElementById('calZoomBtn');
+  if(calZoomBtn) calZoomBtn.onclick = ()=>{ calZoomedOut = !calZoomedOut; render(); };
 
   const calSearchInput = document.getElementById('calSearch');
   if(calSearchInput){
