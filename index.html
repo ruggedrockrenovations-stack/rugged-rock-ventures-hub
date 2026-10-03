@@ -1084,6 +1084,7 @@ const TRANSLATIONS = {
     add_property_btn:'+ Add Property', add_active_job_btn:'+ Add Active Job', add_flip_btn:'+ Add Flip',
     all:'All', watching:'Watching', bid_submitted:'Bid Submitted', won:'Won', active_status:'Active', passed:'Passed',
     search_placeholder:'Search address or county',
+    aj_search_ph:'Search jobs…',
     no_properties_title:'No properties here yet', no_properties_edit:'Click "+ Add Property" to log one.', no_properties_view:'Nothing matches this filter yet.',
     no_active_title:'Nothing active right now', no_active_edit:'Add one directly here, or set a property\'s status to "Active" on the Properties tab.', no_active_view:'Nothing has been started yet.',
     latest_note:'Latest note:', crew_label:'Crew:', auction_label:'Auction:',
@@ -1188,6 +1189,7 @@ const TRANSLATIONS = {
     add_property_btn:'+ Agregar Propiedad', add_active_job_btn:'+ Agregar Trabajo Activo', add_flip_btn:'+ Agregar Casa',
     all:'Todas', watching:'Observando', bid_submitted:'Oferta Enviada', won:'Ganada', active_status:'Activa', passed:'Descartada',
     search_placeholder:'Buscar dirección o condado',
+    aj_search_ph:'Buscar trabajos…',
     no_properties_title:'Aún no hay propiedades', no_properties_edit:'Haz clic en "+ Agregar Propiedad" para registrar una.', no_properties_view:'Nada coincide con este filtro todavía.',
     no_active_title:'Nada activo por ahora', no_active_edit:'Agrega uno aquí, o cambia el estado de una propiedad a "Activa" en la pestaña Propiedades.', no_active_view:'Todavía no se ha comenzado nada.',
     latest_note:'Última nota:', crew_label:'Equipo:', auction_label:'Subasta:',
@@ -2730,6 +2732,7 @@ function renderActiveJobs(content){
 
   let html = `<div class="display" style="font-size:24px;">${t('tab_active')}</div>
   <div style="font-size:13.5px;color:#8a8175;margin-bottom:18px;max-width:520px;">${t('active_desc')}</div>`;
+  html += `<div class="filter-row" style="margin-bottom:14px;"><input class="filter-search" id="ajSearchBox" placeholder="${t('aj_search_ph')}" style="margin-left:0;flex:1;max-width:340px;"></div>`;
   if(editMode){
     html += `<div class="cal-header" style="margin-bottom:18px;">
       <div></div>
@@ -2750,6 +2753,16 @@ function renderActiveJobs(content){
 
   const addBtn = document.getElementById('addActiveJobBtn');
   if(addBtn) addBtn.onclick = ()=>openActiveJobModal(null);
+
+  const ajSearchBox = document.getElementById('ajSearchBox');
+  if(ajSearchBox){
+    ajSearchBox.oninput = ()=>{
+      const q = ajSearchBox.value.trim().toLowerCase();
+      content.querySelectorAll('.prop-grid .prop-card').forEach(c=>{
+        c.style.display = (!q || c.textContent.toLowerCase().includes(q)) ? '' : 'none';
+      });
+    };
+  }
 
   if(editMode){
     content.querySelectorAll('.prop-card').forEach(c=>{
