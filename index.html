@@ -385,6 +385,7 @@
   .prop-card.listing .prop-address{font-size:14px;}
   .prop-badges{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
   .listing-link-btn{display:inline-block;margin-top:4px;padding:8px 14px;border-radius:8px;background:#eef2f7;color:#33475f;font-size:13px;font-weight:700;text-decoration:none;width:fit-content;border:1px solid var(--line);}
+  .directions-btn{display:inline-block;margin-top:4px;padding:8px 14px;border-radius:8px;background:#e9f5ec;color:#1e7a3c;font-size:13px;font-weight:700;text-decoration:none;width:fit-content;}
   .listing-link-btn:active{background:#e2e9f2;}
   .card-actions{display:flex;flex-wrap:wrap;gap:8px;}
   .empty-state{
@@ -1077,6 +1078,7 @@ const TRANSLATIONS = {
     spec_beds_short:'bd', spec_baths_short:'ba', spec_sqft_short:'sqft',
     fit_label:'Fit', view_listing_btn:'View Listing', no_photo:'No photo yet', new_badge:'New',
     field_auction_datetime:'Auction date & time (optional — shows on calendar)', field_drive_url:'Drive folder link', drive_folder_btn:'📁 Drive Folder',
+    directions_btn:'🧭 Directions',
     field_phase:'Phase', phase_bid:'Bid Phase', phase_progress:'In Progress', phase_complete:'Complete',
     field_job_type:'Job type', job_type_flip:'Flip', job_type_reno:'Renovation',
     field_cover_photo:'Cover photo URL', photo_url_hint:'Paste a link to a hosted photo — this can\'t upload from your camera roll directly.',
@@ -1178,6 +1180,7 @@ const TRANSLATIONS = {
     spec_beds_short:'hab', spec_baths_short:'baños', spec_sqft_short:'pc',
     fit_label:'Afinidad', view_listing_btn:'Ver anuncio', no_photo:'Sin foto aún', new_badge:'Nuevo',
     field_auction_datetime:'Fecha y hora de subasta (opcional — aparece en el calendario)', field_drive_url:'Enlace a la carpeta de Drive', drive_folder_btn:'📁 Carpeta de Drive',
+    directions_btn:'🧭 Cómo llegar',
     field_phase:'Fase', phase_bid:'Fase de oferta', phase_progress:'En progreso', phase_complete:'Completado',
     field_job_type:'Tipo de trabajo', job_type_flip:'Flip', job_type_reno:'Renovación',
     field_cover_photo:'URL de foto de portada', photo_url_hint:'Pega un enlace a una foto ya alojada — esto no puede subir fotos directamente desde tu carrete.',
@@ -2533,6 +2536,7 @@ function propCardHtml(p){
       <div class="card-actions">
         ${p.driveUrl ? `<a class="drive-link-btn" href="${escapeAttr(p.driveUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('drive_folder_btn')}</a>` : ''}
         ${p.listingUrl ? `<a class="listing-link-btn" href="${escapeAttr(p.listingUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('view_listing_btn')}</a>` : ''}
+        ${p.address ? `<a class="directions-btn" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(p.address)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('directions_btn')}</a>` : ''}
       </div>
       ${lastNote ? `<div class="prop-notes">${t('latest_note')} ${escapeHtml(lastNote.text)}</div>` : ''}
     </div>
@@ -2604,6 +2608,7 @@ function activeJobCardHtml(job){
   const badges = `<span class="status-badge ${pi.cls}">${escapeHtml(pi.label)}</span><span class="status-badge ${jtCls}" style="margin-left:6px;">${escapeHtml(jtLabel)}</span>`;
   const crewLine = job.crew && job.crew.length ? `<div class="prop-meta">${t('crew_label')} ${job.crew.map(escapeHtml).join(', ')}</div>` : '';
   const driveBtn = job.driveUrl ? `<a class="drive-link-btn" href="${escapeAttr(job.driveUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('drive_folder_btn')}</a>` : '';
+  const dirBtn = job.title ? `<a class="directions-btn" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(job.title)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${t('directions_btn')}</a>` : '';
   const noteLine = lastNote ? `<div class="prop-notes">${t('latest_note')} ${escapeHtml(lastNote.text)}</div>` : '';
   if(jt==='Flip'){
     return `<div class="prop-card listing ${editMode?'editable':''}" data-source="standalone" data-id="${job.id}">
@@ -2612,7 +2617,7 @@ function activeJobCardHtml(job){
       <div class="prop-address">${escapeHtml(job.title||'(untitled job)')}</div>
       ${crewLine}
       <div class="prop-badges">${badges}</div>
-      ${driveBtn ? `<div class="card-actions">${driveBtn}</div>` : ''}
+      ${(driveBtn || dirBtn) ? `<div class="card-actions">${driveBtn}${dirBtn}</div>` : ''}
       ${noteLine}
     </div>
   </div>`;
@@ -2621,7 +2626,7 @@ function activeJobCardHtml(job){
     <div class="prop-address">${escapeHtml(job.title||'(untitled job)')}</div>
     ${badges}
     ${crewLine}
-    ${driveBtn}
+    ${driveBtn}${dirBtn}
     ${noteLine}
   </div>`;
 }
