@@ -272,6 +272,12 @@
     padding:2px 4px;
   }
   .cal-add-day:hover{color:var(--rust);}
+  .cal-search-row{display:flex;gap:8px;margin-bottom:6px;}
+  .cal-search{flex:1;min-width:0;padding:10px 14px;border-radius:10px;border:1px solid var(--line-soft);font-size:14px;background:var(--card);color:var(--ink);}
+  .cal-search-clear{padding:0 16px;border-radius:10px;border:1px solid var(--line-soft);background:var(--card);font-size:18px;color:#8a8175;}
+  .cal-search-info{font-size:12.5px;color:#8a8175;margin-bottom:10px;min-height:18px;}
+  .chip-match{outline:3px solid var(--amber);outline-offset:1px;}
+  .cal-cell.match-day{border-color:var(--amber);border-width:2px;background:#fdf6ec;}
 
   /* ---------- properties ---------- */
   .filter-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;align-items:center;}
@@ -1045,6 +1051,11 @@ let editMode = false;
 let activeTab = 'calendar';
 let calMonth = new Date().getMonth();
 let calYear = new Date().getFullYear();
+let calSearch = '';
+let calSearchJobIds = new Set();
+let calSearchGcalIds = new Set();
+let calSearchDay = null;
+let calSearchTimer = null;
 let propFilter = 'All';
 let propSearch = '';
 let dataLoaded = false;
@@ -1132,6 +1143,7 @@ const TRANSLATIONS = {
     dtd_clear_completed:'Clear Completed', dtd_task_completed:'Task marked complete.',
     dtd_splitting:'Organizing tasks…', dtd_split_error:'Couldn\'t organize that into tasks — try again.', dtd_clear_confirm:'Clear all completed tasks for this person and day?',
     calendar_desc:'Jobs, auctions, and anything else on the schedule — tap a day to add something.',
+    cal_search_ph:'Search events or a date…', cal_search_found:'matches found', cal_search_none:'No matches',
     dailytodo_desc:'Quick daily rundowns for the crew. Talk it through, they check it off as they go.',
     active_desc:'Properties and jobs currently being worked, all in one place.',
     properties_desc:'Leads you\'re watching, bidding on, or have already won.',
@@ -1234,6 +1246,7 @@ const TRANSLATIONS = {
     dtd_clear_completed:'Borrar Completadas', dtd_task_completed:'Tarea marcada como completada.',
     dtd_splitting:'Organizando tareas…', dtd_split_error:'No se pudo organizar en tareas — intenta de nuevo.', dtd_clear_confirm:'¿Borrar todas las tareas completadas de esta persona en este día?',
     calendar_desc:'Trabajos, subastas y cualquier otra cosa en el calendario — toca un día para agregar algo.',
+    cal_search_ph:'Busca eventos o una fecha…', cal_search_found:'resultados', cal_search_none:'Sin resultados',
     dailytodo_desc:'Resúmenes diarios rápidos para el equipo. Cuéntalo y ellos lo van marcando.',
     active_desc:'Propiedades y trabajos que se están trabajando actualmente, todo en un solo lugar.',
     properties_desc:'Propiedades que estás observando, en las que ofertaste, o que ya ganaste.',
@@ -2195,6 +2208,51 @@ function recurrenceLabel(job){
   return map[job.recurrence] || '';
 }
 
+function parseCalSearchDate(q){
+  q = q.trim().toLowerCase();
+  const months = {jan:0,january:0,feb:1,february:1,mar:2,march:2,apr:3,april:3,may:4,jun:5,june:5,jul:6,july:6,aug:7,august:7,sep:8,sept:8,september:8,oct:9,october:9,nov:10,november:10,dec:11,december:11};
+  let m = q.match(/^([a-z]+)\s+(\d{1,2})(?:\s*,?\s*(\d{4}))?$/);
+  if(m && months[m[1]]!==undefined) return {y:m[3]?+m[3]:calYear, mo:months[m[1]], d:+m[2]};
+  m = q.match(/^(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{4}))?$/);
+  if(m) return {y:m[3]?+m[3]:calYear, mo:+m[1]-1, d:+m[2]};
+  m = q.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if(m) return {y:+m[1], mo:+m[2]-1, d:+m[3]};
+  return null;
+}
+
+function runCalendarSearch(){
+  calSearchJobIds = new Set();
+  calSearchGcalIds = new Set();
+  calSearchDay = null;
+  const q = calSearch.trim().toLowerCase();
+  let infoMsg = '';
+  if(q){
+    const dt = parseCalSearchDate(q);
+    if(dt && dt.mo>=0 && dt.mo<12 && dt.d>=1 && dt.d<=31){
+      calYear = dt.y; calMonth = dt.mo;
+      calSearchDay = dt.y+'-'+String(dt.mo+1).padStart(2,'0')+'-'+String(dt.d).padStart(2,'0');
+    } else {
+      const hits = [];
+      jobs.forEach(j=>{ if(j.title && j.title.toLowerCase().includes(q)) hits.push({kind:'job', id:j.id, date:j.date||j.startDate}); });
+      googleEvents.forEach(g=>{ if(g.title && g.title.toLowerCase().includes(q)) hits.push({kind:'gcal', id:g.id, date:g.date}); });
+      if(hits.length){
+        hits.sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
+        const f = hits[0];
+        if(f.date){ const parts = f.date.split('-'); calYear = +parts[0]; calMonth = +parts[1]-1; }
+        hits.forEach(h=>{ (h.kind==='job'?calSearchJobIds:calSearchGcalIds).add(String(h.id)); });
+        infoMsg = hits.length+' '+t('cal_search_found');
+      } else {
+        infoMsg = t('cal_search_none');
+      }
+    }
+  }
+  render();
+  const info = document.getElementById('calSearchInfo');
+  if(info) info.textContent = infoMsg;
+  const si = document.getElementById('calSearch');
+  if(si && q){ si.focus(); try{ si.setSelectionRange(si.value.length, si.value.length); }catch(e){} }
+}
+
 function renderCalendar(content){
   const monthNames = t('months');
   const firstDay = new Date(calYear, calMonth, 1);
@@ -2234,7 +2292,12 @@ function renderCalendar(content){
       <button id="nextMonth">&#8250;</button>
     </div>
     ${editMode ? `<button class="add-btn" id="addJobBtn">${t('add_to_calendar')}</button>` : ''}
-  </div>`;
+  </div>
+  <div class="cal-search-row">
+    <input id="calSearch" class="cal-search" placeholder="${t('cal_search_ph')}" value="${escapeAttr(calSearch)}" autocomplete="off">
+    ${calSearch ? `<button id="calSearchClear" class="cal-search-clear">×</button>` : ''}
+  </div>
+  <div id="calSearchInfo" class="cal-search-info"></div>`;
 
   html += '<div class="cal-grid">';
   t('days').forEach(d=>{
@@ -2249,14 +2312,14 @@ function renderCalendar(content){
     const isToday = iso===today;
     const dayJobs = jobs.filter(j=>jobOccursOnDate(j, iso));
     const dayGoogle = googleEvents.filter(g=>g.date===iso);
-    html += `<div class="cal-cell ${isToday?'today':''}" data-date="${iso}">
+    html += `<div class="cal-cell ${isToday?'today':''}${calSearchDay===iso?' match-day':''}" data-date="${iso}">
       <div class="cal-daynum">${day}</div>`;
     dayJobs.forEach(j=>{
       const recurIcon = (j.recurrence && j.recurrence!=='none') ? '🔁 ' : '';
-      html += `<button class="chip ${j.type}" data-jobid="${j.id}">${recurIcon}${j.time ? fmtTime(j.time)+' — ' : ''}${escapeHtml(j.title)}</button>`;
+      html += `<button class="chip ${j.type}${calSearchJobIds.has(String(j.id))?' chip-match':''}" data-jobid="${j.id}">${recurIcon}${j.time ? fmtTime(j.time)+' — ' : ''}${escapeHtml(j.title)}</button>`;
     });
     dayGoogle.forEach(g=>{
-      html += `<button class="chip gcal" data-gcalid="${g.id}">📅 ${(g.time && g.time!=='00:00') ? fmtTime(g.time)+' — ' : ''}${escapeHtml(g.title)}</button>`;
+      html += `<button class="chip gcal${calSearchGcalIds.has(String(g.id))?' chip-match':''}" data-gcalid="${g.id}">📅 ${(g.time && g.time!=='00:00') ? fmtTime(g.time)+' — ' : ''}${escapeHtml(g.title)}</button>`;
     });
     if(editMode){
       html += `<button class="cal-add-day" data-date="${iso}">${t('add_entry')}</button>`;
@@ -2277,6 +2340,17 @@ function renderCalendar(content){
   };
   const addBtn = document.getElementById('addJobBtn');
   if(addBtn) addBtn.onclick = ()=>openJobModal(null, todayISO());
+
+  const calSearchInput = document.getElementById('calSearch');
+  if(calSearchInput){
+    calSearchInput.addEventListener('input', ()=>{
+      calSearch = calSearchInput.value;
+      clearTimeout(calSearchTimer);
+      calSearchTimer = setTimeout(runCalendarSearch, 350);
+    });
+    const calSearchClear = document.getElementById('calSearchClear');
+    if(calSearchClear) calSearchClear.onclick = ()=>{ calSearch=''; clearTimeout(calSearchTimer); runCalendarSearch(); };
+  }
 
   content.querySelectorAll('.cal-add-day').forEach(b=>{
     b.onclick = ()=>openJobModal(null, b.dataset.date);
