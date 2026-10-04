@@ -3645,6 +3645,8 @@ function renderContacts(content){
   const pickBtn = document.getElementById('pickPhoneBtn');
   if(pickBtn){
     pickBtn.onclick = async ()=>{
+      // TEMP-DEBUG 2026-10-04: diagnosing Kris's phone. Remove once root-caused.
+      const dbgBrowser = /SamsungBrowser/i.test(navigator.userAgent||'') ? 'SamsungBrowser' : 'other';
       try{
         // Only request properties this browser actually supports —
         // asking for an unsupported one makes select() throw.
@@ -3657,7 +3659,10 @@ function renderContacts(content){
         }catch(e){}
         if(props.length===0){ showAlert(t('pick_phone_unsupported')); return; }
         const selected = await navigator.contacts.select(props, {multiple:true});
-        if(!selected || selected.length===0) return; // picked nothing — stay quiet
+        if(!selected || selected.length===0){
+          showAlert('DEBUG (temporary — tell Chat exactly what this says): browser='+dbgBrowser+' | asked for: '+props.join(',')+' | picker returned '+(selected?selected.length:'null')+' contacts');
+          return;
+        }
         let added = 0;
         selected.forEach(c=>{
           const nm = (c.name && c.name[0]) || '';
@@ -3680,15 +3685,11 @@ function renderContacts(content){
         render();
         showAlert(t('import_done'));
       }catch(err){
-        // User dismissing the picker is normal — stay quiet. Anything else
-        // is a real failure and should be visible instead of silent.
-        if(err && (err.name==='AbortError' || err.name==='NotAllowedError')) return;
-        const errMsg = (err && err.message) || '';
-        if(/unable to open a contact selector/i.test(errMsg)){
-          showAlert(t('pick_phone_browser'));
-        }else{
-          showAlert(t('pick_phone_failed') + (errMsg ? ' ('+errMsg+')' : ''));
-        }
+        // TEMP-DEBUG: show every picker failure while diagnosing.
+        const nm = (err && err.name) || 'no-name';
+        const mg = (err && err.message) || '';
+        showAlert('DEBUG (temporary — tell Chat exactly what this says): browser='+dbgBrowser+' | picker threw '+nm+': '+mg);
+        return;
       }
     };
   }
