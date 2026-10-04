@@ -1199,6 +1199,7 @@ const TRANSLATIONS = {
     import_contacts_btn:'Import File', pick_from_phone_btn:'Pick from Phone', import_confirm:'Import {n} contact(s) from this file?',
     import_no_contacts_found:'Couldn\'t find any contacts in that file.', import_done:'Contacts imported.',
     pick_phone_failed:'Couldn\'t read contacts from the phone.', pick_phone_no_data:'The selected contacts had no name, phone, or email to import.', pick_phone_unsupported:'This phone can\'t pick contacts this way — add them manually instead.',
+    pick_phone_browser:'This browser can\'t open the phone\'s contact picker (a known Samsung Internet issue). Open the hub in Chrome to use Pick from Phone, or add contacts with the Add Contact button instead.',
     field_end_date:'End date (optional — for multi-day events)', field_repeat:'Repeat', repeat_none:'Does not repeat',
     recur_weekly:'Repeats weekly', recur_biweekly:'Repeats every 2 weeks', recur_monthly:'Repeats monthly', recur_yearly:'Repeats yearly',
     field_repeat_until:'Repeat until (optional)', repeat_until_hint:'Leave blank to repeat for up to a year automatically.',
@@ -1308,6 +1309,7 @@ const TRANSLATIONS = {
     import_contacts_btn:'Importar Archivo', pick_from_phone_btn:'Elegir del Teléfono', import_confirm:'¿Importar {n} contacto(s) de este archivo?',
     import_no_contacts_found:'No se encontraron contactos en ese archivo.', import_done:'Contactos importados.',
     pick_phone_failed:'No se pudieron leer los contactos del teléfono.', pick_phone_no_data:'Los contactos seleccionados no tenían nombre, teléfono ni correo para importar.', pick_phone_unsupported:'Este teléfono no puede elegir contactos de esta forma — agrégalos manualmente.',
+    pick_phone_browser:'Este navegador no puede abrir el selector de contactos del teléfono (un problema conocido de Samsung Internet). Abre el hub en Chrome para usar «Elegir del Teléfono», o agrega los contactos con el botón Agregar Contacto.',
     field_end_date:'Fecha de fin (opcional — para eventos de varios días)', field_repeat:'Repetir', repeat_none:'No se repite',
     recur_weekly:'Se repite semanalmente', recur_biweekly:'Se repite cada 2 semanas', recur_monthly:'Se repite mensualmente', recur_yearly:'Se repite anualmente',
     field_repeat_until:'Repetir hasta (opcional)', repeat_until_hint:'Déjalo en blanco para repetir automáticamente hasta por un año.',
@@ -3576,7 +3578,10 @@ function renderContacts(content){
   if(editMode){
     html += `<button class="btn-secondary" id="importVcfBtn" style="padding:8px 14px;font-size:12.5px;">${t('import_contacts_btn')}</button>`;
     html += `<input type="file" id="importVcfInput" accept=".vcf,text/vcard" style="display:none;">`;
-    const hasContactPicker = 'contacts' in navigator && 'ContactsManager' in window;
+    const isSamsungBrowser = /SamsungBrowser/i.test(navigator.userAgent || '');
+    // Samsung Internet exposes the Contact Picker API but select() always
+    // throws "Unable to open a contact selector" there — hide the button.
+    const hasContactPicker = !isSamsungBrowser && 'contacts' in navigator && 'ContactsManager' in window;
     if(hasContactPicker){
       html += `<button class="btn-secondary" id="pickPhoneBtn" style="padding:8px 14px;font-size:12.5px;">${t('pick_from_phone_btn')}</button>`;
     }
@@ -3678,7 +3683,12 @@ function renderContacts(content){
         // User dismissing the picker is normal — stay quiet. Anything else
         // is a real failure and should be visible instead of silent.
         if(err && (err.name==='AbortError' || err.name==='NotAllowedError')) return;
-        showAlert(t('pick_phone_failed') + (err && err.message ? ' ('+err.message+')' : ''));
+        const errMsg = (err && err.message) || '';
+        if(/unable to open a contact selector/i.test(errMsg)){
+          showAlert(t('pick_phone_browser'));
+        }else{
+          showAlert(t('pick_phone_failed') + (errMsg ? ' ('+errMsg+')' : ''));
+        }
       }
     };
   }
