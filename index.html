@@ -1068,6 +1068,16 @@ let dtdSelectedDate = todayISO();
 let openNotesFilter = ''; // '' = all, '__none__' = general only, otherwise a job id
 let contacts = []; // {id, name, company, role, phone, email, notes, createdAt}
 let contactsSearch = '';
+// Samsung phones (any browser): the system "Share a contact" picker runs but
+// never hands the contact back to the page, so Pick from Phone is a dead end.
+window.RRV_SAMSUNG_DEVICE = false;
+try{
+  if(navigator.userAgentData && navigator.userAgentData.getHighEntropyValues){
+    navigator.userAgentData.getHighEntropyValues(['model']).then(function(ua){
+      window.RRV_SAMSUNG_DEVICE = !!(ua && ua.model && /^SM-/i.test(ua.model));
+    }).catch(function(){});
+  }
+}catch(e){}
 let lastDeletedNote = null;
 let undoTimer = null;
 let hofUnlocked = false; // session-only unlock for non-editor viewers
@@ -1201,6 +1211,7 @@ const TRANSLATIONS = {
     pick_phone_failed:'Couldn\'t read contacts from the phone.', pick_phone_no_data:'The selected contacts had no name, phone, or email to import.', pick_phone_unsupported:'This phone can\'t pick contacts this way — add them manually instead.',
     pick_phone_no_select:'Nothing came through — in the picker, tap one contact to import it, then repeat for the next person.',
     pick_phone_browser:'This browser can\'t open the phone\'s contact picker (a known Samsung Internet issue). Open the hub in Chrome to use Pick from Phone, or add contacts with the Add Contact button instead.',
+    pick_phone_samsung_note:'Samsung phones can\'t pass contacts to the hub (a Samsung bug) — use Import File with a .vcf export, or the Add Contact button.',
     field_end_date:'End date (optional — for multi-day events)', field_repeat:'Repeat', repeat_none:'Does not repeat',
     recur_weekly:'Repeats weekly', recur_biweekly:'Repeats every 2 weeks', recur_monthly:'Repeats monthly', recur_yearly:'Repeats yearly',
     field_repeat_until:'Repeat until (optional)', repeat_until_hint:'Leave blank to repeat for up to a year automatically.',
@@ -1312,6 +1323,7 @@ const TRANSLATIONS = {
     pick_phone_failed:'No se pudieron leer los contactos del teléfono.', pick_phone_no_data:'Los contactos seleccionados no tenían nombre, teléfono ni correo para importar.', pick_phone_unsupported:'Este teléfono no puede elegir contactos de esta forma — agrégalos manualmente.',
     pick_phone_no_select:'No llegó ningún contacto — en el selector, toca un contacto para importarlo, luego repite con el siguiente.',
     pick_phone_browser:'Este navegador no puede abrir el selector de contactos del teléfono (un problema conocido de Samsung Internet). Abre el hub en Chrome para usar «Elegir del Teléfono», o agrega los contactos con el botón Agregar Contacto.',
+    pick_phone_samsung_note:'Los teléfonos Samsung no pueden pasar contactos al hub (un error de Samsung) — usa Importar Archivo con un .vcf exportado, o el botón Agregar Contacto.',
     field_end_date:'Fecha de fin (opcional — para eventos de varios días)', field_repeat:'Repetir', repeat_none:'No se repite',
     recur_weekly:'Se repite semanalmente', recur_biweekly:'Se repite cada 2 semanas', recur_monthly:'Se repite mensualmente', recur_yearly:'Se repite anualmente',
     field_repeat_until:'Repetir hasta (opcional)', repeat_until_hint:'Déjalo en blanco para repetir automáticamente hasta por un año.',
@@ -3582,10 +3594,14 @@ function renderContacts(content){
     html += `<input type="file" id="importVcfInput" accept=".vcf,text/vcard" style="display:none;">`;
     const isSamsungBrowser = /SamsungBrowser/i.test(navigator.userAgent || '');
     // Samsung Internet exposes the Contact Picker API but select() always
-    // throws "Unable to open a contact selector" there — hide the button.
-    const hasContactPicker = !isSamsungBrowser && 'contacts' in navigator && 'ContactsManager' in window;
+    // throws "Unable to open a contact selector" there; on Samsung hardware
+    // in other browsers the system picker runs but returns nothing. Hide it.
+    const isSamsungDevice = !!window.RRV_SAMSUNG_DEVICE;
+    const hasContactPicker = !isSamsungBrowser && !isSamsungDevice && 'contacts' in navigator && 'ContactsManager' in window;
     if(hasContactPicker){
       html += `<button class="btn-secondary" id="pickPhoneBtn" style="padding:8px 14px;font-size:12.5px;">${t('pick_from_phone_btn')}</button>`;
+    }else if(isSamsungBrowser || isSamsungDevice){
+      html += `<div style="font-size:12.5px;opacity:.75;">${t('pick_phone_samsung_note')}</div>`;
     }
     html += `<button class="add-btn" id="addContactBtn">${t('add_contact_btn')}</button>`;
   }
