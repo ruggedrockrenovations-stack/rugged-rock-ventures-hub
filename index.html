@@ -1199,7 +1199,7 @@ const TRANSLATIONS = {
     import_contacts_btn:'Import File', pick_from_phone_btn:'Pick from Phone', import_confirm:'Import {n} contact(s) from this file?',
     import_no_contacts_found:'Couldn\'t find any contacts in that file.', import_done:'Contacts imported.',
     pick_phone_failed:'Couldn\'t read contacts from the phone.', pick_phone_no_data:'The selected contacts had no name, phone, or email to import.', pick_phone_unsupported:'This phone can\'t pick contacts this way — add them manually instead.',
-    pick_phone_no_select:'No contacts came through — in the picker, tap each contact so it shows a checkmark, make sure Name and Phone are switched on, then tap Done.',
+    pick_phone_no_select:'Nothing came through — in the picker, tap one contact to import it, then repeat for the next person.',
     pick_phone_browser:'This browser can\'t open the phone\'s contact picker (a known Samsung Internet issue). Open the hub in Chrome to use Pick from Phone, or add contacts with the Add Contact button instead.',
     field_end_date:'End date (optional — for multi-day events)', field_repeat:'Repeat', repeat_none:'Does not repeat',
     recur_weekly:'Repeats weekly', recur_biweekly:'Repeats every 2 weeks', recur_monthly:'Repeats monthly', recur_yearly:'Repeats yearly',
@@ -1310,7 +1310,7 @@ const TRANSLATIONS = {
     import_contacts_btn:'Importar Archivo', pick_from_phone_btn:'Elegir del Teléfono', import_confirm:'¿Importar {n} contacto(s) de este archivo?',
     import_no_contacts_found:'No se encontraron contactos en ese archivo.', import_done:'Contactos importados.',
     pick_phone_failed:'No se pudieron leer los contactos del teléfono.', pick_phone_no_data:'Los contactos seleccionados no tenían nombre, teléfono ni correo para importar.', pick_phone_unsupported:'Este teléfono no puede elegir contactos de esta forma — agrégalos manualmente.',
-    pick_phone_no_select:'No llegó ningún contacto — en el selector, toca cada contacto para marcarlo, asegúrate de que Nombre y Teléfono estén activados, luego toca Listo.',
+    pick_phone_no_select:'No llegó ningún contacto — en el selector, toca un contacto para importarlo, luego repite con el siguiente.',
     pick_phone_browser:'Este navegador no puede abrir el selector de contactos del teléfono (un problema conocido de Samsung Internet). Abre el hub en Chrome para usar «Elegir del Teléfono», o agrega los contactos con el botón Agregar Contacto.',
     field_end_date:'Fecha de fin (opcional — para eventos de varios días)', field_repeat:'Repetir', repeat_none:'No se repite',
     recur_weekly:'Se repite semanalmente', recur_biweekly:'Se repite cada 2 semanas', recur_monthly:'Se repite mensualmente', recur_yearly:'Se repite anualmente',
@@ -3658,7 +3658,10 @@ function renderContacts(content){
           }
         }catch(e){}
         if(props.length===0){ showAlert(t('pick_phone_unsupported')); return; }
-        const selected = await navigator.contacts.select(props, {multiple:true});
+        // Single-select: tapping a contact imports it immediately. The old
+        // multi-select flow (checkboxes + Done) wasn't registering taps as
+        // selections on some phones, silently returning nothing.
+        const selected = await navigator.contacts.select(props);
         if(!selected || selected.length===0){
           showAlert(t('pick_phone_no_select'));
           return;
