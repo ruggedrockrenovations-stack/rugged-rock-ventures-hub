@@ -1198,6 +1198,7 @@ const TRANSLATIONS = {
     a2hs_ios_instructions:'1. Tap the Share icon in Safari\'s toolbar (the square with an arrow pointing up)\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" in the top right\n\nThat\'s it — an icon will appear on your Home Screen.',
     import_contacts_btn:'Import File', pick_from_phone_btn:'Pick from Phone', import_confirm:'Import {n} contact(s) from this file?',
     import_no_contacts_found:'Couldn\'t find any contacts in that file.', import_done:'Contacts imported.',
+    pick_phone_failed:'Couldn\'t read contacts from the phone.', pick_phone_no_data:'The selected contacts had no name, phone, or email to import.', pick_phone_unsupported:'This phone can\'t pick contacts this way — add them manually instead.',
     field_end_date:'End date (optional — for multi-day events)', field_repeat:'Repeat', repeat_none:'Does not repeat',
     recur_weekly:'Repeats weekly', recur_biweekly:'Repeats every 2 weeks', recur_monthly:'Repeats monthly', recur_yearly:'Repeats yearly',
     field_repeat_until:'Repeat until (optional)', repeat_until_hint:'Leave blank to repeat for up to a year automatically.',
@@ -1306,6 +1307,7 @@ const TRANSLATIONS = {
     a2hs_ios_instructions:'1. Toca el ícono de Compartir en la barra de Safari (el cuadrado con una flecha hacia arriba)\n2. Desplázate hacia abajo y toca "Agregar a Pantalla de Inicio"\n3. Toca "Agregar" en la esquina superior derecha\n\nListo — aparecerá un ícono en tu Pantalla de Inicio.',
     import_contacts_btn:'Importar Archivo', pick_from_phone_btn:'Elegir del Teléfono', import_confirm:'¿Importar {n} contacto(s) de este archivo?',
     import_no_contacts_found:'No se encontraron contactos en ese archivo.', import_done:'Contactos importados.',
+    pick_phone_failed:'No se pudieron leer los contactos del teléfono.', pick_phone_no_data:'Los contactos seleccionados no tenían nombre, teléfono ni correo para importar.', pick_phone_unsupported:'Este teléfono no puede elegir contactos de esta forma — agrégalos manualmente.',
     field_end_date:'Fecha de fin (opcional — para eventos de varios días)', field_repeat:'Repetir', repeat_none:'No se repite',
     recur_weekly:'Se repite semanalmente', recur_biweekly:'Se repite cada 2 semanas', recur_monthly:'Se repite mensualmente', recur_yearly:'Se repite anualmente',
     field_repeat_until:'Repetir hasta (opcional)', repeat_until_hint:'Déjalo en blanco para repetir automáticamente hasta por un año.',
@@ -3639,24 +3641,44 @@ function renderContacts(content){
   if(pickBtn){
     pickBtn.onclick = async ()=>{
       try{
-        const selected = await navigator.contacts.select(['name','tel','email'], {multiple:true});
-        if(!selected || selected.length===0) return;
+        // Only request properties this browser actually supports —
+        // asking for an unsupported one makes select() throw.
+        let props = ['name','tel','email'];
+        try{
+          if(navigator.contacts.getProperties){
+            const supported = await navigator.contacts.getProperties();
+            props = props.filter(p=>supported.indexOf(p)!==-1);
+          }
+        }catch(e){}
+        if(props.length===0){ showAlert(t('pick_phone_unsupported')); return; }
+        const selected = await navigator.contacts.select(props, {multiple:true});
+        if(!selected || selected.length===0) return; // picked nothing — stay quiet
+        let added = 0;
         selected.forEach(c=>{
+          const nm = (c.name && c.name[0]) || '';
+          const ph = (c.tel && c.tel[0]) || '';
+          const em = (c.email && c.email[0]) || '';
+          if(!nm && !ph && !em) return;
           contacts.push({
             id: uid(),
-            name: (c.name && c.name[0]) || '',
+            name: nm,
             company: '', role: '',
-            phone: (c.tel && c.tel[0]) || '',
-            email: (c.email && c.email[0]) || '',
+            phone: ph,
+            email: em,
             notes: '',
             createdAt: Date.now()
           });
+          added++;
         });
+        if(added===0){ showAlert(t('pick_phone_no_data')); return; }
         await saveContacts();
-        showAlert(t('import_done'));
         render();
+        showAlert(t('import_done'));
       }catch(err){
-        // user cancelled the picker — no error needed
+        // User dismissing the picker is normal — stay quiet. Anything else
+        // is a real failure and should be visible instead of silent.
+        if(err && (err.name==='AbortError' || err.name==='NotAllowedError')) return;
+        showAlert(t('pick_phone_failed') + (err && err.message ? ' ('+err.message+')' : ''));
       }
     };
   }
