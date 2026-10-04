@@ -1203,7 +1203,7 @@ const TRANSLATIONS = {
     contacts_search_placeholder:'Search name, company, or trade',
     export_contact_btn:'Add to My Contacts', export_all_btn:'Export All', export_contact_hint:'Downloads this contact into your phone\'s contacts app.',
     delete_contact_confirm:'Delete this contact?', contact_name_required:'Name is required.',
-    copy_btn:'Copy', copy_failed:'Couldn\'t copy automatically — try a long-press on the number instead.',
+    copy_btn:'Copy', copy_failed:'Couldn\'t copy automatically — try a long-press on the number instead.', save_contact_btn:'Save',
     a2hs_banner_text:'Add this to your Home Screen for quick access', a2hs_install_btn:'Install', a2hs_howto_btn:'How to Add',
     a2hs_ios_instructions:'1. Tap the Share icon in Safari\'s toolbar (the square with an arrow pointing up)\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" in the top right\n\nThat\'s it — an icon will appear on your Home Screen.',
     import_contacts_btn:'Import File', pick_from_phone_btn:'Pick from Phone', import_confirm:'Import {n} contact(s) from this file?',
@@ -1317,7 +1317,7 @@ const TRANSLATIONS = {
     contacts_search_placeholder:'Buscar nombre, empresa u oficio',
     export_contact_btn:'Agregar a Mis Contactos', export_all_btn:'Exportar Todos', export_contact_hint:'Descarga este contacto en la app de contactos de tu teléfono.',
     delete_contact_confirm:'¿Eliminar este contacto?', contact_name_required:'El nombre es obligatorio.',
-    copy_btn:'Copiar', copy_failed:'No se pudo copiar automáticamente — intenta mantener presionado el número.',
+    copy_btn:'Copiar', copy_failed:'No se pudo copiar automáticamente — intenta mantener presionado el número.', save_contact_btn:'Guardar',
     a2hs_banner_text:'Agrega esto a tu Pantalla de Inicio para acceso rápido', a2hs_install_btn:'Instalar', a2hs_howto_btn:'Cómo Agregar',
     a2hs_ios_instructions:'1. Toca el ícono de Compartir en la barra de Safari (el cuadrado con una flecha hacia arriba)\n2. Desplázate hacia abajo y toca "Agregar a Pantalla de Inicio"\n3. Toca "Agregar" en la esquina superior derecha\n\nListo — aparecerá un ícono en tu Pantalla de Inicio.',
     import_contacts_btn:'Importar Archivo', pick_from_phone_btn:'Elegir del Teléfono', import_confirm:'¿Importar {n} contacto(s) de este archivo?',
@@ -3694,7 +3694,7 @@ function renderContacts(content){
       html += `<div class="prop-card editable" data-id="${c.id}">
         <div class="prop-address">${escapeHtml(c.name||'')}</div>
         ${c.company || c.role ? `<div class="prop-meta">${escapeHtml(c.company||'')}${c.company&&c.role?' • ':''}${escapeHtml(c.role||'')}</div>` : ''}
-        ${c.phone ? `<div class="prop-price" style="display:flex;align-items:center;gap:8px;">${escapeHtml(c.phone)}<button type="button" class="copy-btn" data-copy="${escapeAttr(c.phone)}">${t('copy_btn')}</button></div>` : ''}
+        ${c.phone ? `<div class="prop-price" style="display:flex;align-items:center;gap:8px;">${escapeHtml(c.phone)}<button type="button" class="copy-btn" data-copy="${escapeAttr(c.phone)}">${t('copy_btn')}</button><button type="button" class="copy-btn" data-save-contact="${c.id}" title="${escapeAttr(t('export_contact_btn'))}">${t('save_contact_btn')}</button></div>` : ''}
         ${c.email ? `<div class="prop-meta">${escapeHtml(c.email)}</div>` : ''}
       </div>`;
     });
@@ -3802,6 +3802,13 @@ function renderContacts(content){
     b.onclick = (e)=>{
       e.stopPropagation();
       copyToClipboard(b.dataset.copy, b);
+    };
+  });
+  content.querySelectorAll('[data-save-contact]').forEach(b=>{
+    b.onclick = (e)=>{
+      e.stopPropagation();
+      const ct = contacts.find(x=>x.id===b.dataset.saveContact);
+      if(ct) downloadVcf(ct);
     };
   });
 }
