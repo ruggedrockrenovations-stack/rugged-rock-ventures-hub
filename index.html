@@ -1098,6 +1098,7 @@ let calSearchDay = null;
 let calSearchTimer = null;
 let calZoomedOut = false;
 let propFilter = 'All';
+let jobStageFilter = 'In Progress';  // jobs board stage view: 'Bid Phase' = Pending, 'In Progress' = Active, 'Complete' = Completed
 let propSearch = '';
 let dataLoaded = false;
 
@@ -1133,7 +1134,7 @@ const TRANSLATIONS = {
     fit_label:'Fit', view_listing_btn:'View Listing', no_photo:'No photo yet', new_badge:'New',
     field_auction_datetime:'Auction date & time (optional — shows on calendar)', field_drive_url:'Drive folder link', drive_folder_btn:'📁 Drive Folder',
     directions_btn:'🧭 Directions',
-    field_phase:'Phase', phase_bid:'Bid Phase', phase_progress:'In Progress', phase_complete:'Complete',
+    field_phase:'Stage', phase_bid:'Pending', phase_progress:'Active', phase_complete:'Completed', stage_empty_pending:'No pending jobs. Bids that have not landed a deposit yet show up here.', stage_empty_completed:'No completed jobs yet. Jobs you mark Completed show up here.',
     field_job_type:'Job type', job_type_flip:'Flip', job_type_reno:'Renovation',
     field_cover_photo:'Cover photo URL', photo_url_hint:'Paste a link to a hosted photo — this can\'t upload from your camera roll directly.',
     field_purchase:'Purchase price', field_reno:'Reno cost', field_sell:'Sell price', field_sold_date:'Sold date (used for the year-by-year counter)',
@@ -1247,7 +1248,7 @@ const TRANSLATIONS = {
     fit_label:'Afinidad', view_listing_btn:'Ver anuncio', no_photo:'Sin foto aún', new_badge:'Nuevo',
     field_auction_datetime:'Fecha y hora de subasta (opcional — aparece en el calendario)', field_drive_url:'Enlace a la carpeta de Drive', drive_folder_btn:'📁 Carpeta de Drive',
     directions_btn:'🧭 Cómo llegar',
-    field_phase:'Fase', phase_bid:'Fase de oferta', phase_progress:'En progreso', phase_complete:'Completado',
+    field_phase:'Etapa', phase_bid:'Pendiente', phase_progress:'Activo', phase_complete:'Completado', stage_empty_pending:'No hay trabajos pendientes. Las ofertas que aún no tienen depósito aparecen aquí.', stage_empty_completed:'Aún no hay trabajos completados. Los trabajos que marques Completado aparecen aquí.',
     field_job_type:'Tipo de trabajo', job_type_flip:'Flip', job_type_reno:'Renovación',
     field_cover_photo:'URL de foto de portada', photo_url_hint:'Pega un enlace a una foto ya alojada — esto no puede subir fotos directamente desde tu carrete.',
     field_purchase:'Precio de compra', field_reno:'Costo de renovación', field_sell:'Precio de venta', field_sold_date:'Fecha de venta (para el contador por año)',
@@ -2886,13 +2887,23 @@ function reopenFlip(id){
 
 function renderActiveJobs(content){
   const activeProps = properties.filter(p=>p.status==='Active').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-  const phaseOrder = {'Bid Phase':0, 'In Progress':1, 'Complete':2};
-  const phaseRank = j => (phaseOrder[j.phase||'In Progress']!==undefined ? phaseOrder[j.phase||'In Progress'] : 1);
-  const standalone = [...activeJobs].sort((a,b)=> (phaseRank(a)-phaseRank(b)) || ((b.createdAt||0)-(a.createdAt||0)));
+  // Stage views map onto the existing per-job phase values:
+  // 'Bid Phase' = Pending (bid out, deposit not in, not official yet),
+  // 'In Progress' = Active (deposit received / work underway), 'Complete' = Completed.
+  // Properties marked Active on the Properties tab belong to the Active stage.
+  const stageOf = j => (j.phase==='Bid Phase' || j.phase==='Complete') ? j.phase : 'In Progress';
+  const stageCounts = {'Bid Phase':0, 'In Progress':activeProps.length, 'Complete':0};
+  activeJobs.forEach(j=>{ stageCounts[stageOf(j)]++; });
+  const standalone = activeJobs.filter(j=>stageOf(j)===jobStageFilter).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  const stageProps = jobStageFilter==='In Progress' ? activeProps : [];
 
   let html = `<div class="display" style="font-size:24px;">${t('tab_active')}</div>
   <div style="font-size:13.5px;color:#8a8175;margin-bottom:18px;max-width:520px;">${t('active_desc')}</div>`;
-  html += `<div class="filter-row" style="margin-bottom:14px;"><input class="filter-search" id="ajSearchBox" placeholder="${t('aj_search_ph')}" style="margin-left:0;flex:1;max-width:340px;"></div>`;
+  html += '<div class="filter-row" style="margin-bottom:14px;">';
+  [['Bid Phase','phase_bid'],['In Progress','phase_progress'],['Complete','phase_complete']].forEach(([st,key])=>{
+    html += `<button class="filter-chip aj-stage-chip ${jobStageFilter===st?'active':''}" data-stage="${st}">${t(key)} (${stageCounts[st]})</button>`;
+  });
+  html += `<input class="filter-search" id="ajSearchBox" placeholder="${t('aj_search_ph')}" style="margin-left:0;flex:1;max-width:340px;"></div>`;
   if(editMode){
     html += `<div class="cal-header" style="margin-bottom:18px;">
       <div></div>
@@ -2900,16 +2911,26 @@ function renderActiveJobs(content){
     </div>`;
   }
 
-  if(activeProps.length===0 && standalone.length===0){
-    html += `<div class="empty-state"><div class="display">${t('no_active_title')}</div><div>${editMode ? t('no_active_edit') : t('no_active_view')}</div></div>`;
+  if(stageProps.length===0 && standalone.length===0){
+    if(jobStageFilter==='Bid Phase'){
+      html += `<div class="empty-state"><div class="display">${t('phase_bid')}</div><div>${t('stage_empty_pending')}</div></div>`;
+    }else if(jobStageFilter==='Complete'){
+      html += `<div class="empty-state"><div class="display">${t('phase_complete')}</div><div>${t('stage_empty_completed')}</div></div>`;
+    }else{
+      html += `<div class="empty-state"><div class="display">${t('no_active_title')}</div><div>${editMode ? t('no_active_edit') : t('no_active_view')}</div></div>`;
+    }
   }else{
     html += '<div class="prop-grid">';
-    activeProps.forEach(p=>{ html += propCardHtml(p); });
+    stageProps.forEach(p=>{ html += propCardHtml(p); });
     standalone.forEach(j=>{ html += activeJobCardHtml(j); });
     html += '</div>';
   }
 
   content.innerHTML = html;
+
+  content.querySelectorAll('.aj-stage-chip').forEach(b=>{
+    b.onclick = ()=>{ jobStageFilter = b.dataset.stage; render(); };
+  });
 
   const addBtn = document.getElementById('addActiveJobBtn');
   if(addBtn) addBtn.onclick = ()=>openActiveJobModal(null);
