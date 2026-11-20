@@ -1195,8 +1195,8 @@ const TRANSLATIONS = {
     cal_zoom_out:'⤢ Whole month', cal_zoom_in:'⤡ Readable',
     dailytodo_desc:'Quick daily rundowns for the crew. Talk it through, they check it off as they go.',
     active_desc:'Properties and jobs currently being worked, all in one place.',
-    gp_desc:'Renovation jobs only. Enter the job price and direct costs and the gross profit fills in. Totals count only jobs with a price entered.',
-    gp_price:'Job price', gp_materials:'Materials', gp_labor:'Labor', gp_other:'Other direct costs', gp_finished:'Date finished', gp_profit:'Gross profit', gp_margin:'Margin', gp_revenue:'Revenue', gp_costs:'Direct costs', gp_save:'Save numbers', gp_saved:'Saved.', gp_edit_hint:'Switch to Editing (top right) to enter numbers.', gp_no_jobs:'No renovation jobs yet. Add one on the Active Jobs tab.', gp_not_priced:'No price entered yet', gp_other_hint:'Subs, dump fees, etc.',
+    gp_desc:'Renovation jobs only, Active and Completed only. Enter the job price and direct costs and the gross profit fills in. Totals count only jobs with a price entered.',
+    gp_price:'Job price', gp_materials:'Materials', gp_labor:'Labor', gp_other:'Other direct costs', gp_finished:'Date finished', gp_profit:'Gross profit', gp_margin:'Margin', gp_revenue:'Revenue', gp_costs:'Direct costs', gp_save:'Save numbers', gp_saved:'Saved.', gp_edit_hint:'Switch to Editing (top right) to enter numbers.', gp_no_jobs:'No Active or Completed renovation jobs yet. Add one on the Active Jobs tab.', gp_not_priced:'No price entered yet', gp_other_hint:'Subs, dump fees, etc.',
     properties_desc:'Leads you\'re watching, bidding on, or have already won.',
     hof_desc_main:'Past flips and the numbers behind them.',
     opennotes_no_job:'No specific job — general note', opennotes_link_job:'Link to a job (optional)',
@@ -1311,8 +1311,8 @@ const TRANSLATIONS = {
     cal_zoom_out:'⤢ Mes completo', cal_zoom_in:'⤡ Legible',
     dailytodo_desc:'Resúmenes diarios rápidos para el equipo. Cuéntalo y ellos lo van marcando.',
     active_desc:'Propiedades y trabajos que se están trabajando actualmente, todo en un solo lugar.',
-    gp_desc:'Solo trabajos de renovación. Ingrese el precio del trabajo y los costos directos y la ganancia bruta se calcula sola. Los totales solo cuentan trabajos con precio.',
-    gp_price:'Precio del trabajo', gp_materials:'Materiales', gp_labor:'Mano de obra', gp_other:'Otros costos directos', gp_finished:'Fecha de término', gp_profit:'Ganancia bruta', gp_margin:'Margen', gp_revenue:'Ingresos', gp_costs:'Costos directos', gp_save:'Guardar números', gp_saved:'Guardado.', gp_edit_hint:'Cambie a Edición (arriba a la derecha) para ingresar números.', gp_no_jobs:'Aún no hay trabajos de renovación. Agregue uno en la pestaña Trabajos Activos.', gp_not_priced:'Aún no hay precio', gp_other_hint:'Subcontratistas, tarifas de vertedero, etc.',
+    gp_desc:'Solo trabajos de renovación, activos y completados. Ingrese el precio del trabajo y los costos directos y la ganancia bruta se calcula sola. Los totales solo cuentan trabajos con precio.',
+    gp_price:'Precio del trabajo', gp_materials:'Materiales', gp_labor:'Mano de obra', gp_other:'Otros costos directos', gp_finished:'Fecha de término', gp_profit:'Ganancia bruta', gp_margin:'Margen', gp_revenue:'Ingresos', gp_costs:'Costos directos', gp_save:'Guardar números', gp_saved:'Guardado.', gp_edit_hint:'Cambie a Edición (arriba a la derecha) para ingresar números.', gp_no_jobs:'Aún no hay trabajos de renovación activos o completados. Agregue uno en la pestaña Trabajos Activos.', gp_not_priced:'Aún no hay precio', gp_other_hint:'Subcontratistas, tarifas de vertedero, etc.',
     properties_desc:'Propiedades que estás observando, en las que ofertaste, o que ya ganaste.',
     hof_desc_main:'Casas pasadas y los números detrás de ellas.',
     opennotes_no_job:'Sin trabajo específico — nota general', opennotes_link_job:'Vincular a un trabajo (opcional)',
@@ -2289,12 +2289,16 @@ function render(){
 }
 
 
-// ---------------- gross profit view (renovations only) ----------------
+// ---------------- gross profit view (renovations only, Active + Completed only) ----------------
 // Reads the same rrv-active-jobs list as the Active Jobs tab. Flips are
-// excluded (jobType 'Flip'). Cost fields live on the job object itself
+// excluded (jobType 'Flip') and so are Pending / Bid Phase jobs: only
+// phase 'In Progress' (Active) or 'Complete' (Completed) show here, per
+// Keegan. A job with no phase set is treated as In Progress, matching the
+// hub's stage mapping elsewhere. Cost fields live on the job object itself
 // (gpPrice, gpMaterials, gpLabor, gpOther, gpFinished) and are saved back
-// with saveActiveJobs(), so they survive reloads. No numbers are seeded:
-// job price is not stored anywhere else in the hub, so it is entered here.
+// with saveActiveJobs(), so they survive reloads. Bid prices were pre-filled
+// into gpPrice in Supabase for Active + Completed jobs (bid = final price,
+// per Keegan); materials/labor were left blank for Keegan/Kris to enter.
 function gpNum(v){ const n = parseFloat(v); return isFinite(n) ? n : 0; }
 function gpMoney(n){ return '$' + Math.round(n).toLocaleString('en-US'); }
 function gpJobYear(j){
@@ -2316,7 +2320,7 @@ function gpPreviewText(price, mat, lab, oth){
   return t('gp_profit') + ': ' + gpMoney(profit) + '  ·  ' + t('gp_margin') + ': ' + margin.toFixed(1) + '%';
 }
 function renderGrossProfit(content){
-  const reno = activeJobs.filter(j=>(j.jobType || 'Renovation') !== 'Flip')
+  const reno = activeJobs.filter(j=>(j.jobType || 'Renovation') !== 'Flip' && (j.phase || 'In Progress') !== 'Bid Phase')
     .sort((a,b)=>(b.createdAt || 0) - (a.createdAt || 0));
   const years = [...new Set(reno.map(gpJobYear).filter(Boolean))].sort().reverse();
   if(gpYearFilter !== 'All' && !years.includes(gpYearFilter)) gpYearFilter = 'All';
