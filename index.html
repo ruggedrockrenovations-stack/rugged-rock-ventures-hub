@@ -341,6 +341,41 @@
   .gp-chart-bar.cost{background:var(--brick);}
   .gp-chart-val{font-size:12px;color:#6b6257;white-space:nowrap;}
   .gp-chart-note{font-size:12.5px;color:#8a8175;margin-top:6px;}
+  /* ---------- gross profit dashboard (futuristic dark, scoped to this tab) ---------- */
+  .gp-dash{background:linear-gradient(160deg,#0b1020,#0e1526 55%,#0b1020);border:1px solid rgba(56,189,248,.28);border-radius:20px;padding:18px;color:#e8eefc;box-shadow:0 0 0 1px rgba(56,189,248,.08),0 12px 32px rgba(2,6,23,.45);}
+  .gp-dash .display{color:#f8fafc;text-shadow:0 0 18px rgba(56,189,248,.35);}
+  .gp-desc{font-size:13.5px;color:#94a3b8;margin-bottom:16px;max-width:560px;}
+  .gp-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+  .gp-stat{background:linear-gradient(160deg,rgba(56,189,248,.14),rgba(99,102,241,.10));border:1px solid rgba(148,163,184,.28);border-radius:16px;padding:14px;box-shadow:0 0 16px rgba(56,189,248,.10);}
+  .gp-stat-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#7dd3fc;}
+  .gp-stat-value{font-size:26px;font-weight:800;color:#fff;line-height:1.15;margin-top:4px;text-shadow:0 0 14px rgba(56,189,248,.30);}
+  .gp-stat-sub{font-size:12px;color:#94a3b8;margin-top:2px;}
+  .gp-stat-profit{background:linear-gradient(160deg,rgba(52,211,153,.16),rgba(163,230,53,.08));}
+  .gp-stat-profit .gp-stat-label{color:#6ee7b7;}
+  .gp-stat-profit .gp-stat-value{text-shadow:0 0 14px rgba(52,211,153,.35);}
+  .gp-dash .filter-chip{background:rgba(15,23,42,.85);border:1px solid rgba(56,189,248,.35);color:#cbd5e1;}
+  .gp-dash .filter-chip.active{background:linear-gradient(90deg,#06b6d4,#6366f1);color:#fff;border-color:transparent;box-shadow:0 0 14px rgba(56,189,248,.50);}
+  .gp-dash .prop-card{background:#111a2e;border:1px solid rgba(148,163,184,.22);color:#e8eefc;box-shadow:none;}
+  .gp-dash .gp-chart h3{color:#f1f5f9;}
+  .gp-dash .gp-chart-legend,.gp-dash .gp-chart-val,.gp-dash .gp-chart-note{color:#94a3b8;}
+  .gp-dash .gp-chart-label{color:#e2e8f0;}
+  .gp-dash .gp-chart-bar.rev{background:linear-gradient(90deg,#22d3ee,#6366f1);box-shadow:0 0 10px rgba(34,211,238,.55);}
+  .gp-dash .gp-chart-bar.prof{background:linear-gradient(90deg,#34d399,#a3e635);box-shadow:0 0 10px rgba(52,211,153,.55);}
+  .gp-status-row{margin-bottom:12px;}
+  .gp-status-head{display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:5px;}
+  .gp-status-bar{height:10px;border-radius:6px;background:rgba(148,163,184,.20);overflow:hidden;}
+  .gp-status-fill{height:100%;border-radius:6px;min-width:2px;}
+  .gp-status-fill.active{background:linear-gradient(90deg,#22d3ee,#3b82f6);box-shadow:0 0 10px rgba(34,211,238,.60);}
+  .gp-status-fill.completed{background:linear-gradient(90deg,#a78bfa,#34d399);box-shadow:0 0 10px rgba(167,139,250,.60);}
+  .gp-dash .field label{color:#94a3b8;}
+  .gp-dash .field input{background:#0b1220;border:1px solid rgba(148,163,184,.35);color:#f1f5f9;border-radius:10px;}
+  .gp-dash .gp-preview{color:#e2e8f0;}
+  .gp-dash .gp-saved-msg{color:#94a3b8 !important;}
+  @media (max-width:640px){
+    .gp-dash{padding:14px;border-radius:16px;}
+    .gp-stat-grid{grid-template-columns:repeat(2,1fr);}
+    .gp-stat-value{font-size:22px;}
+  }
   .drive-link-btn{display:inline-block;margin-top:4px;padding:8px 14px;border-radius:8px;background:#e8eefc;color:#1a56db;font-size:13px;font-weight:700;text-decoration:none;width:fit-content;}
   .drive-link-btn:active{background:#d7e2fa;}
   .prop-address{font-size:17px;font-weight:700;color:var(--charcoal);line-height:1.25;}
@@ -1210,7 +1245,7 @@ const TRANSLATIONS = {
     dailytodo_desc:'Quick daily rundowns for the crew. Talk it through, they check it off as they go.',
     active_desc:'Properties and jobs currently being worked, all in one place.',
     gp_desc:'Renovation jobs only, Active and Completed only. Enter the job price and direct costs and the gross profit fills in. Totals count only jobs with a price entered.',
-    gp_price:'Job price', gp_materials:'Materials', gp_labor:'Labor', gp_other:'Other direct costs', gp_finished:'Date finished', gp_profit:'Gross profit', gp_margin:'Margin', gp_revenue:'Revenue', gp_costs:'Direct costs', gp_save:'Save numbers', gp_saved:'Saved.', gp_edit_hint:'Switch to Editing (top right) to enter numbers.', gp_no_jobs:'No Active or Completed renovation jobs yet. Add one on the Active Jobs tab.', gp_not_priced:'No price entered yet', gp_other_hint:'Subs, dump fees, etc.', gp_chart:'How the jobs compare', gp_chart_by_year:'By year', gp_chart_unpriced:'not priced yet, shown at $0', gp_chart_no_data:'Enter a job price to see the chart.',
+    gp_price:'Job price', gp_materials:'Materials', gp_labor:'Labor', gp_other:'Other direct costs', gp_finished:'Date finished', gp_profit:'Gross profit', gp_margin:'Margin', gp_revenue:'Revenue', gp_costs:'Direct costs', gp_save:'Save numbers', gp_saved:'Saved.', gp_edit_hint:'Switch to Editing (top right) to enter numbers.', gp_no_jobs:'No Active or Completed renovation jobs yet. Add one on the Active Jobs tab.', gp_not_priced:'No price entered yet', gp_other_hint:'Subs, dump fees, etc.', gp_chart:'How the jobs compare', gp_chart_by_year:'By year', gp_chart_unpriced:'not priced yet, shown at $0', gp_chart_no_data:'Enter a job price to see the chart.', gp_tbd:'TBD', gp_jobs:'Jobs', gp_priced:'Priced', gp_avg_job:'Avg job size', gp_status:'Status', gp_active:'Active', gp_completed:'Completed', gp_by_month:'By month', gp_no_costs:'No costs entered yet', gp_profit_tbd:'Enter costs to see profit', gp_unpriced:'Unpriced',
     properties_desc:'Leads you\'re watching, bidding on, or have already won.',
     hof_desc_main:'Past flips and the numbers behind them.',
     opennotes_no_job:'No specific job — general note', opennotes_link_job:'Link to a job (optional)',
@@ -1326,7 +1361,7 @@ const TRANSLATIONS = {
     dailytodo_desc:'Resúmenes diarios rápidos para el equipo. Cuéntalo y ellos lo van marcando.',
     active_desc:'Propiedades y trabajos que se están trabajando actualmente, todo en un solo lugar.',
     gp_desc:'Solo trabajos de renovación, activos y completados. Ingrese el precio del trabajo y los costos directos y la ganancia bruta se calcula sola. Los totales solo cuentan trabajos con precio.',
-    gp_price:'Precio del trabajo', gp_materials:'Materiales', gp_labor:'Mano de obra', gp_other:'Otros costos directos', gp_finished:'Fecha de término', gp_profit:'Ganancia bruta', gp_margin:'Margen', gp_revenue:'Ingresos', gp_costs:'Costos directos', gp_save:'Guardar números', gp_saved:'Guardado.', gp_edit_hint:'Cambie a Edición (arriba a la derecha) para ingresar números.', gp_no_jobs:'Aún no hay trabajos de renovación activos o completados. Agregue uno en la pestaña Trabajos Activos.', gp_not_priced:'Aún no hay precio', gp_other_hint:'Subcontratistas, tarifas de vertedero, etc.', gp_chart:'Cómo se comparan los trabajos', gp_chart_by_year:'Por año', gp_chart_unpriced:'sin precio aún, se muestra en $0', gp_chart_no_data:'Ingrese el precio de un trabajo para ver el gráfico.',
+    gp_price:'Precio del trabajo', gp_materials:'Materiales', gp_labor:'Mano de obra', gp_other:'Otros costos directos', gp_finished:'Fecha de término', gp_profit:'Ganancia bruta', gp_margin:'Margen', gp_revenue:'Ingresos', gp_costs:'Costos directos', gp_save:'Guardar números', gp_saved:'Guardado.', gp_edit_hint:'Cambie a Edición (arriba a la derecha) para ingresar números.', gp_no_jobs:'Aún no hay trabajos de renovación activos o completados. Agregue uno en la pestaña Trabajos Activos.', gp_not_priced:'Aún no hay precio', gp_other_hint:'Subcontratistas, tarifas de vertedero, etc.', gp_chart:'Cómo se comparan los trabajos', gp_chart_by_year:'Por año', gp_chart_unpriced:'sin precio aún, se muestra en $0', gp_chart_no_data:'Ingrese el precio de un trabajo para ver el gráfico.', gp_tbd:'TBD', gp_jobs:'Trabajos', gp_priced:'Con precio', gp_avg_job:'Promedio por trabajo', gp_status:'Estado', gp_active:'Activos', gp_completed:'Completados', gp_by_month:'Por mes', gp_no_costs:'Sin costos aún', gp_profit_tbd:'Ingrese costos para ver la ganancia', gp_unpriced:'Sin precio',
     properties_desc:'Propiedades que estás observando, en las que ofertaste, o que ya ganaste.',
     hof_desc_main:'Casas pasadas y los números detrás de ellas.',
     opennotes_no_job:'Sin trabajo específico — nota general', opennotes_link_job:'Vincular a un trabajo (opcional)',
@@ -2323,12 +2358,19 @@ function gpJobYear(j){
 function gpCalc(j){
   const price = gpNum(j.gpPrice), mat = gpNum(j.gpMaterials), lab = gpNum(j.gpLabor), oth = gpNum(j.gpOther);
   const costs = mat + lab + oth;
-  return {price:price, costs:costs, profit: price - costs, margin: price > 0 ? (price - costs) / price * 100 : null};
+  const hasCosts = j.gpMaterials != null && j.gpLabor != null;
+  const profit = hasCosts ? price - costs : null;
+  return {price:price, costs:costs, profit:profit, hasCosts:hasCosts, margin: (hasCosts && price > 0) ? (price - costs) / price * 100 : null};
+}
+function gpJobYearMonth(j){
+  const iso = j.gpFinished || (j.createdAt ? new Date(j.createdAt).toISOString().slice(0,10) : '');
+  return iso ? String(iso).slice(0,7) : '';
 }
 function gpPreviewText(price, mat, lab, oth){
   const costs = gpNum(mat) + gpNum(lab) + gpNum(oth);
   const p = gpNum(price);
   if(p <= 0) return t('gp_not_priced');
+  if(mat === '' || mat == null || lab === '' || lab == null) return t('gp_profit') + ': ' + t('gp_tbd') + ' (' + t('gp_profit_tbd') + ')';
   const profit = p - costs;
   const margin = profit / p * 100;
   return t('gp_profit') + ': ' + gpMoney(profit) + '  ·  ' + t('gp_margin') + ': ' + margin.toFixed(1) + '%';
@@ -2338,11 +2380,14 @@ function gpPreviewText(price, mat, lab, oth){
 // Built fresh on every render, so it updates as soon as numbers are saved.
 function gpChartRow(label, rev, prof, max){
   const revW = max > 0 ? Math.max(0, Math.min(100, rev / max * 100)) : 0;
-  const profW = max > 0 ? Math.max(0, Math.min(100, prof / max * 100)) : 0;
+  const profW = (prof != null && max > 0) ? Math.max(0, Math.min(100, prof / max * 100)) : 0;
+  const profRow = prof == null
+    ? `<div class="gp-chart-bar-row"><span class="gp-chart-val">${t('gp_profit')}: ${t('gp_tbd')}</span></div>`
+    : `<div class="gp-chart-bar-row"><div class="gp-chart-bar prof" style="width:${profW.toFixed(1)}%"></div><span class="gp-chart-val">${gpMoney(prof)}</span></div>`;
   return `<div class="gp-chart-row">
     <div class="gp-chart-label">${escapeHtml(label)}</div>
     <div class="gp-chart-bar-row"><div class="gp-chart-bar rev" style="width:${revW.toFixed(1)}%"></div><span class="gp-chart-val">${gpMoney(rev)}</span></div>
-    <div class="gp-chart-bar-row"><div class="gp-chart-bar prof" style="width:${profW.toFixed(1)}%"></div><span class="gp-chart-val">${gpMoney(prof)}</span></div>
+    ${profRow}
   </div>`;
 }
 function gpChartHtml(shown){
@@ -2362,17 +2407,36 @@ function gpChartHtml(shown){
   const years = {};
   shown.forEach(j=>{
     const y = gpJobYear(j) || '—';
-    if(!years[y]) years[y] = {rev:0, prof:0};
+    if(!years[y]) years[y] = {rev:0, prof:0, profKnown:false};
     const c = gpCalc(j);
     years[y].rev += c.price;
-    years[y].prof += c.profit;
+    if(c.profit !== null){ years[y].prof += c.profit; years[y].profKnown = true; }
   });
   const yearNames = Object.keys(years).sort().reverse();
   if(yearNames.length > 1){
     const yMax = Math.max.apply(null, yearNames.map(y=>years[y].rev));
     html += `<h3 style="margin-top:16px;">${t('gp_chart_by_year')}</h3>`;
     yearNames.forEach(y=>{
-      html += gpChartRow(y, years[y].rev, years[y].prof, yMax);
+      html += gpChartRow(y, years[y].rev, years[y].profKnown ? years[y].prof : null, yMax);
+    });
+  }
+  // By month, using date finished, falling back to created date. Only priced jobs.
+  const months = {};
+  shown.forEach(j=>{
+    const c = gpCalc(j);
+    if(c.price <= 0) return;
+    const m = gpJobYearMonth(j);
+    if(!m) return;
+    if(!months[m]) months[m] = {rev:0, prof:0, profKnown:false};
+    months[m].rev += c.price;
+    if(c.profit !== null){ months[m].prof += c.profit; months[m].profKnown = true; }
+  });
+  const monthNames = Object.keys(months).sort().reverse();
+  if(monthNames.length > 1){
+    const mMax = Math.max.apply(null, monthNames.map(m=>months[m].rev));
+    html += `<h3 style="margin-top:16px;">${t('gp_by_month')}</h3>`;
+    monthNames.forEach(m=>{
+      html += gpChartRow(m, months[m].rev, months[m].profKnown ? months[m].prof : null, mMax);
     });
   }
   html += '</div>';
@@ -2384,25 +2448,42 @@ function renderGrossProfit(content){
   const years = [...new Set(reno.map(gpJobYear).filter(Boolean))].sort().reverse();
   if(gpYearFilter !== 'All' && !years.includes(gpYearFilter)) gpYearFilter = 'All';
   const shown = gpYearFilter === 'All' ? reno : reno.filter(j=>gpJobYear(j) === gpYearFilter);
-  let revenue = 0, costs = 0, profit = 0, priced = 0;
-  shown.forEach(j=>{ const c = gpCalc(j); if(c.price > 0){ revenue += c.price; costs += c.costs; profit += c.profit; priced++; } });
-  const margin = revenue > 0 ? profit / revenue * 100 : null;
+  let revenue = 0, costs = 0, profit = 0, priced = 0, pricedKnown = 0, anyCosts = false;
+  shown.forEach(j=>{ const c = gpCalc(j); if(c.price > 0){ revenue += c.price; costs += c.costs; priced++; if(c.hasCosts){ profit += c.profit; pricedKnown++; } } if(j.gpMaterials != null || j.gpLabor != null || j.gpOther != null) anyCosts = true; });
+  const profitKnown = priced > 0 && pricedKnown === priced;
+  const margin = profitKnown && revenue > 0 ? profit / revenue * 100 : null;
+  const avgJob = priced > 0 ? revenue / priced : 0;
+  const unpriced = shown.length - priced;
+  const activeJobsShown = shown.filter(j=>(j.phase || 'In Progress') === 'In Progress');
+  const completedJobsShown = shown.filter(j=>(j.phase || 'In Progress') === 'Complete');
+  const activeRev = activeJobsShown.reduce((s,j)=>s + gpCalc(j).price, 0);
+  const completedRev = completedJobsShown.reduce((s,j)=>s + gpCalc(j).price, 0);
 
-  let html = `<div class="display" style="font-size:24px;">${t('tab_grossprofit')}</div>
-  <div style="font-size:13.5px;color:#8a8175;margin-bottom:18px;max-width:560px;">${t('gp_desc')}</div>`;
+  let html = `<div class="gp-dash">
+  <div class="display" style="font-size:24px;">${t('tab_grossprofit')}</div>
+  <div class="gp-desc">${t('gp_desc')}</div>`;
   html += '<div class="filter-row" style="margin-bottom:14px;">';
   html += `<button class="filter-chip ${gpYearFilter==='All'?'active':''}" data-year="All">All</button>`;
   years.forEach(y=>{ html += `<button class="filter-chip ${gpYearFilter===y?'active':''}" data-year="${y}">${y}</button>`; });
   html += '</div>';
-  html += `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;">
-    <div class="prop-card"><div style="font-size:12px;color:#8a8175;text-transform:uppercase;letter-spacing:.04em;">${t('gp_revenue')}</div><div style="font-size:22px;font-weight:700;">${gpMoney(revenue)}</div><div style="font-size:12px;color:#8a8175;">${priced} of ${shown.length} jobs priced</div></div>
-    <div class="prop-card"><div style="font-size:12px;color:#8a8175;text-transform:uppercase;letter-spacing:.04em;">${t('gp_costs')}</div><div style="font-size:22px;font-weight:700;">${gpMoney(costs)}</div></div>
-    <div class="prop-card"><div style="font-size:12px;color:#8a8175;text-transform:uppercase;letter-spacing:.04em;">${t('gp_profit')}</div><div style="font-size:22px;font-weight:700;">${gpMoney(profit)}</div></div>
-    <div class="prop-card"><div style="font-size:12px;color:#8a8175;text-transform:uppercase;letter-spacing:.04em;">${t('gp_margin')}</div><div style="font-size:22px;font-weight:700;">${margin === null ? '—' : margin.toFixed(1) + '%'}</div></div>
+  html += `<div class="gp-stat-grid">
+    <div class="gp-stat"><div class="gp-stat-label">${t('gp_revenue')}</div><div class="gp-stat-value">${gpMoney(revenue)}</div><div class="gp-stat-sub">${priced} of ${shown.length} priced</div></div>
+    <div class="gp-stat gp-stat-profit"><div class="gp-stat-label">${t('gp_profit')}</div><div class="gp-stat-value">${profitKnown ? gpMoney(profit) : t('gp_tbd')}</div><div class="gp-stat-sub">${profitKnown ? t('gp_margin') + ': ' + margin.toFixed(1) + '%' : t('gp_profit_tbd')}</div></div>
+    <div class="gp-stat"><div class="gp-stat-label">${t('gp_avg_job')}</div><div class="gp-stat-value">${priced > 0 ? gpMoney(avgJob) : t('gp_tbd')}</div><div class="gp-stat-sub">priced jobs only</div></div>
+    <div class="gp-stat"><div class="gp-stat-label">${t('gp_jobs')}</div><div class="gp-stat-value">${shown.length}</div><div class="gp-stat-sub">${activeJobsShown.length} ${t('gp_active')} · ${completedJobsShown.length} ${t('gp_completed')}</div></div>
+    <div class="gp-stat"><div class="gp-stat-label">${t('gp_priced')}</div><div class="gp-stat-value">${priced} of ${shown.length}</div><div class="gp-stat-sub">${unpriced} ${t('gp_unpriced')}</div></div>
+    <div class="gp-stat"><div class="gp-stat-label">${t('gp_costs')}</div><div class="gp-stat-value">${gpMoney(costs)}</div><div class="gp-stat-sub">${anyCosts ? 'entered so far' : t('gp_no_costs')}</div></div>
   </div>`;
-  if(shown.length > 0) html += gpChartHtml(shown);
+  if(shown.length > 0){
+    const maxStatus = Math.max(activeJobsShown.length, completedJobsShown.length, 1);
+    html += `<div class="prop-card gp-chart"><h3>${t('gp_status')}</h3>
+    <div class="gp-status-row"><div class="gp-status-head"><span>${t('gp_active')}</span><span>${activeJobsShown.length} ${t('gp_jobs').toLowerCase()} · ${gpMoney(activeRev)}</span></div><div class="gp-status-bar"><div class="gp-status-fill active" style="width:${(activeJobsShown.length / maxStatus * 100).toFixed(1)}%"></div></div></div>
+    <div class="gp-status-row" style="margin-bottom:0;"><div class="gp-status-head"><span>${t('gp_completed')}</span><span>${completedJobsShown.length} ${t('gp_jobs').toLowerCase()} · ${gpMoney(completedRev)}</span></div><div class="gp-status-bar"><div class="gp-status-fill completed" style="width:${(completedJobsShown.length / maxStatus * 100).toFixed(1)}%"></div></div></div>
+    </div>`;
+    html += gpChartHtml(shown);
+  }
   if(!editMode){
-    html += `<div style="font-size:13px;color:#8a8175;margin-bottom:14px;">${t('gp_edit_hint')}</div>`;
+    html += `<div style="font-size:13px;color:#94a3b8;margin-bottom:14px;">${t('gp_edit_hint')}</div>`;
   }
   if(shown.length === 0){
     html += `<div class="empty-state"><div class="display">${t('tab_grossprofit')}</div><div>${t('gp_no_jobs')}</div></div>`;
@@ -2423,12 +2504,13 @@ function renderGrossProfit(content){
           <div class="field"><label>${t('gp_other')}</label><input class="gp-input" data-f="gpOther" type="number" min="0" step="0.01" inputmode="decimal" value="${j.gpOther != null ? j.gpOther : ''}" ${dis} placeholder="0" title="${escapeAttr(t('gp_other_hint'))}"></div>
         </div>
         <div class="field"><label>${t('gp_finished')}</label><input class="gp-input" data-f="gpFinished" type="date" value="${j.gpFinished || ''}" ${dis}></div>
-        <div class="gp-preview" style="font-size:14px;font-weight:700;">${c.price > 0 ? t('gp_profit') + ': ' + gpMoney(c.profit) + '  ·  ' + t('gp_margin') + ': ' + c.margin.toFixed(1) + '%' : t('gp_not_priced')}</div>
+        <div class="gp-preview" style="font-size:14px;font-weight:700;">${gpPreviewText(j.gpPrice, j.gpMaterials, j.gpLabor, j.gpOther)}</div>
         ${editMode ? `<div><button class="btn-primary gp-save-btn" type="button">${t('gp_save')}</button> <span class="gp-saved-msg" style="font-size:13px;color:#8a8175;"></span></div>` : ''}
       </div>`;
     });
     html += '</div>';
   }
+  html += '</div>';
   content.innerHTML = html;
 
   content.querySelectorAll('[data-year]').forEach(b=>{
