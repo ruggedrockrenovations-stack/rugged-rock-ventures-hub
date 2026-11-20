@@ -989,6 +989,7 @@
   <button class="tab" data-tab="dailytodo"></button>
   <button class="tab" data-tab="opennotes"></button>
   <button class="tab" data-tab="active"></button>
+  <button class="tab" data-tab="grossprofit"></button>
   <button class="tab" data-tab="properties"></button>
   <button class="tab" data-tab="contacts"></button>
   <button class="tab" data-tab="hof"></button>
@@ -1099,6 +1100,7 @@ let calSearchTimer = null;
 let calZoomedOut = false;
 let propFilter = 'All';
 let jobStageFilter = 'In Progress';  // jobs board stage view: 'Bid Phase' = Pending, 'In Progress' = Active, 'Complete' = Completed
+let gpYearFilter = 'All';  // gross profit tab year filter
 let propSearch = '';
 let dataLoaded = false;
 
@@ -1107,8 +1109,8 @@ let currentLang = 'en';
 
 const TRANSLATIONS = {
   en: {
-    tab_calendar:'Calendar', tab_properties:'Upcoming Properties', tab_active:'Active Jobs', tab_dailytodo:'Daily To-Do', tab_opennotes:'Open Notes', tab_contacts:'Contacts', tab_hof:'Hall of Fame',
-    tab_calendar_s:'Calendar', tab_properties_s:'Properties', tab_active_s:'Active', tab_dailytodo_s:'To-Do', tab_opennotes_s:'Notes', tab_contacts_s:'Contacts', tab_hof_s:'Hall',
+    tab_calendar:'Calendar', tab_properties:'Upcoming Properties', tab_active:'Active Jobs', tab_grossprofit:'Gross Profit', tab_dailytodo:'Daily To-Do', tab_opennotes:'Open Notes', tab_contacts:'Contacts', tab_hof:'Hall of Fame',
+    tab_calendar_s:'Calendar', tab_properties_s:'Properties', tab_active_s:'Active', tab_grossprofit_s:'Profit', tab_dailytodo_s:'To-Do', tab_opennotes_s:'Notes', tab_contacts_s:'Contacts', tab_hof_s:'Hall',
     view_only:'View Only', editing:'Editing',
     coming_up:'Auctions coming up', nothing_7days:'Nothing in the next 7 days.',
     add_to_calendar:'+ Add to Calendar', add_entry:'+ add',
@@ -1193,6 +1195,8 @@ const TRANSLATIONS = {
     cal_zoom_out:'⤢ Whole month', cal_zoom_in:'⤡ Readable',
     dailytodo_desc:'Quick daily rundowns for the crew. Talk it through, they check it off as they go.',
     active_desc:'Properties and jobs currently being worked, all in one place.',
+    gp_desc:'Renovation jobs only. Enter the job price and direct costs and the gross profit fills in. Totals count only jobs with a price entered.',
+    gp_price:'Job price', gp_materials:'Materials', gp_labor:'Labor', gp_other:'Other direct costs', gp_finished:'Date finished', gp_profit:'Gross profit', gp_margin:'Margin', gp_revenue:'Revenue', gp_costs:'Direct costs', gp_save:'Save numbers', gp_saved:'Saved.', gp_edit_hint:'Switch to Editing (top right) to enter numbers.', gp_no_jobs:'No renovation jobs yet. Add one on the Active Jobs tab.', gp_not_priced:'No price entered yet', gp_other_hint:'Subs, dump fees, etc.',
     properties_desc:'Leads you\'re watching, bidding on, or have already won.',
     hof_desc_main:'Past flips and the numbers behind them.',
     opennotes_no_job:'No specific job — general note', opennotes_link_job:'Link to a job (optional)',
@@ -1221,8 +1225,8 @@ const TRANSLATIONS = {
     recurring_series_hint:'This repeats — editing or deleting it changes the whole series, not just this date.'
   },
   es: {
-    tab_calendar:'Calendario', tab_properties:'Propiedades Próximas', tab_active:'Trabajos Activos', tab_dailytodo:'Tareas del Día', tab_opennotes:'Notas Abiertas', tab_contacts:'Contactos', tab_hof:'Salón de la Fama',
-    tab_calendar_s:'Calend.', tab_properties_s:'Propied.', tab_active_s:'Activos', tab_dailytodo_s:'Tareas', tab_opennotes_s:'Notas', tab_contacts_s:'Contactos', tab_hof_s:'Fama',
+    tab_calendar:'Calendario', tab_properties:'Propiedades Próximas', tab_active:'Trabajos Activos', tab_grossprofit:'Ganancia Bruta', tab_dailytodo:'Tareas del Día', tab_opennotes:'Notas Abiertas', tab_contacts:'Contactos', tab_hof:'Salón de la Fama',
+    tab_calendar_s:'Calend.', tab_properties_s:'Propied.', tab_active_s:'Activos', tab_grossprofit_s:'Ganancia', tab_dailytodo_s:'Tareas', tab_opennotes_s:'Notas', tab_contacts_s:'Contactos', tab_hof_s:'Fama',
     view_only:'Solo Ver', editing:'Editando',
     coming_up:'Subastas próximas', nothing_7days:'Nada en los próximos 7 días.',
     add_to_calendar:'+ Agregar al Calendario', add_entry:'+ agregar',
@@ -1307,6 +1311,8 @@ const TRANSLATIONS = {
     cal_zoom_out:'⤢ Mes completo', cal_zoom_in:'⤡ Legible',
     dailytodo_desc:'Resúmenes diarios rápidos para el equipo. Cuéntalo y ellos lo van marcando.',
     active_desc:'Propiedades y trabajos que se están trabajando actualmente, todo en un solo lugar.',
+    gp_desc:'Solo trabajos de renovación. Ingrese el precio del trabajo y los costos directos y la ganancia bruta se calcula sola. Los totales solo cuentan trabajos con precio.',
+    gp_price:'Precio del trabajo', gp_materials:'Materiales', gp_labor:'Mano de obra', gp_other:'Otros costos directos', gp_finished:'Fecha de término', gp_profit:'Ganancia bruta', gp_margin:'Margen', gp_revenue:'Ingresos', gp_costs:'Costos directos', gp_save:'Guardar números', gp_saved:'Guardado.', gp_edit_hint:'Cambie a Edición (arriba a la derecha) para ingresar números.', gp_no_jobs:'Aún no hay trabajos de renovación. Agregue uno en la pestaña Trabajos Activos.', gp_not_priced:'Aún no hay precio', gp_other_hint:'Subcontratistas, tarifas de vertedero, etc.',
     properties_desc:'Propiedades que estás observando, en las que ofertaste, o que ya ganaste.',
     hof_desc_main:'Casas pasadas y los números detrás de ellas.',
     opennotes_no_job:'Sin trabajo específico — nota general', opennotes_link_job:'Vincular a un trabajo (opcional)',
@@ -2258,6 +2264,7 @@ function render(){
     dailytodo:{full:t('tab_dailytodo'), short:t('tab_dailytodo_s')},
     opennotes:{full:t('tab_opennotes'), short:t('tab_opennotes_s')},
     contacts:{full:t('tab_contacts'), short:t('tab_contacts_s')},
+    grossprofit:{full:t('tab_grossprofit'), short:t('tab_grossprofit_s')},
     hof:{full:t('tab_hof'), short:t('tab_hof_s')}
   };
   document.querySelectorAll('.tab').forEach(tb=>{
@@ -2273,11 +2280,123 @@ function render(){
   }
   if(activeTab==='calendar') renderCalendar(content);
   else if(activeTab==='active') renderActiveJobs(content);
+  else if(activeTab==='grossprofit') renderGrossProfit(content);
   else if(activeTab==='dailytodo') renderDailyToDo(content);
   else if(activeTab==='opennotes') renderOpenNotes(content);
   else if(activeTab==='contacts') renderContacts(content);
   else if(activeTab==='hof') renderHallOfFame(content);
   else renderProperties(content);
+}
+
+
+// ---------------- gross profit view (renovations only) ----------------
+// Reads the same rrv-active-jobs list as the Active Jobs tab. Flips are
+// excluded (jobType 'Flip'). Cost fields live on the job object itself
+// (gpPrice, gpMaterials, gpLabor, gpOther, gpFinished) and are saved back
+// with saveActiveJobs(), so they survive reloads. No numbers are seeded:
+// job price is not stored anywhere else in the hub, so it is entered here.
+function gpNum(v){ const n = parseFloat(v); return isFinite(n) ? n : 0; }
+function gpMoney(n){ return '$' + Math.round(n).toLocaleString('en-US'); }
+function gpJobYear(j){
+  if(j.gpFinished) return String(j.gpFinished).slice(0,4);
+  if(j.createdAt) return String(new Date(j.createdAt).getFullYear());
+  return '';
+}
+function gpCalc(j){
+  const price = gpNum(j.gpPrice), mat = gpNum(j.gpMaterials), lab = gpNum(j.gpLabor), oth = gpNum(j.gpOther);
+  const costs = mat + lab + oth;
+  return {price:price, costs:costs, profit: price - costs, margin: price > 0 ? (price - costs) / price * 100 : null};
+}
+function gpPreviewText(price, mat, lab, oth){
+  const costs = gpNum(mat) + gpNum(lab) + gpNum(oth);
+  const p = gpNum(price);
+  if(p <= 0) return t('gp_not_priced');
+  const profit = p - costs;
+  const margin = profit / p * 100;
+  return t('gp_profit') + ': ' + gpMoney(profit) + '  ·  ' + t('gp_margin') + ': ' + margin.toFixed(1) + '%';
+}
+function renderGrossProfit(content){
+  const reno = activeJobs.filter(j=>(j.jobType || 'Renovation') !== 'Flip')
+    .sort((a,b)=>(b.createdAt || 0) - (a.createdAt || 0));
+  const years = [...new Set(reno.map(gpJobYear).filter(Boolean))].sort().reverse();
+  if(gpYearFilter !== 'All' && !years.includes(gpYearFilter)) gpYearFilter = 'All';
+  const shown = gpYearFilter === 'All' ? reno : reno.filter(j=>gpJobYear(j) === gpYearFilter);
+  let revenue = 0, costs = 0, profit = 0, priced = 0;
+  shown.forEach(j=>{ const c = gpCalc(j); if(c.price > 0){ revenue += c.price; costs += c.costs; profit += c.profit; priced++; } });
+  const margin = revenue > 0 ? profit / revenue * 100 : null;
+
+  let html = `<div class="display" style="font-size:24px;">${t('tab_grossprofit')}</div>
+  <div style="font-size:13.5px;color:#8a8175;margin-bottom:18px;max-width:560px;">${t('gp_desc')}</div>`;
+  html += '<div class="filter-row" style="margin-bottom:14px;">';
+  html += `<button class="filter-chip ${gpYearFilter==='All'?'active':''}" data-year="All">All</button>`;
+  years.forEach(y=>{ html += `<button class="filter-chip ${gpYearFilter===y?'active':''}" data-year="${y}">${y}</button>`; });
+  html += '</div>';
+  html += `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;">
+    <div class="prop-card"><div style="font-size:12px;color:#8a8175;text-transform:uppercase;letter-spacing:.04em;">${t('gp_revenue')}</div><div style="font-size:22px;font-weight:700;">${gpMoney(revenue)}</div><div style="font-size:12px;color:#8a8175;">${priced} of ${shown.length} jobs priced</div></div>
+    <div class="prop-card"><div style="font-size:12px;color:#8a8175;text-transform:uppercase;letter-spacing:.04em;">${t('gp_costs')}</div><div style="font-size:22px;font-weight:700;">${gpMoney(costs)}</div></div>
+    <div class="prop-card"><div style="font-size:12px;color:#8a8175;text-transform:uppercase;letter-spacing:.04em;">${t('gp_profit')}</div><div style="font-size:22px;font-weight:700;">${gpMoney(profit)}</div></div>
+    <div class="prop-card"><div style="font-size:12px;color:#8a8175;text-transform:uppercase;letter-spacing:.04em;">${t('gp_margin')}</div><div style="font-size:22px;font-weight:700;">${margin === null ? '—' : margin.toFixed(1) + '%'}</div></div>
+  </div>`;
+  if(!editMode){
+    html += `<div style="font-size:13px;color:#8a8175;margin-bottom:14px;">${t('gp_edit_hint')}</div>`;
+  }
+  if(shown.length === 0){
+    html += `<div class="empty-state"><div class="display">${t('tab_grossprofit')}</div><div>${t('gp_no_jobs')}</div></div>`;
+  }else{
+    html += '<div class="prop-grid">';
+    shown.forEach(j=>{
+      const c = gpCalc(j);
+      const dis = editMode ? '' : 'disabled';
+      html += `<div class="prop-card gp-card" data-id="${escapeAttr(j.id)}">
+        <div style="font-weight:700;font-size:16px;">${escapeHtml(j.title || '')}</div>
+        <div style="font-size:12.5px;color:#8a8175;">${escapeHtml(j.phase || 'In Progress')}${j.gpFinished ? ' · ' + t('gp_finished') + ': ' + fmtDate(j.gpFinished) : ''}</div>
+        <div class="field-row">
+          <div class="field"><label>${t('gp_price')}</label><input class="gp-input" data-f="gpPrice" type="number" min="0" step="0.01" inputmode="decimal" value="${j.gpPrice != null ? j.gpPrice : ''}" ${dis} placeholder="0"></div>
+          <div class="field"><label>${t('gp_materials')}</label><input class="gp-input" data-f="gpMaterials" type="number" min="0" step="0.01" inputmode="decimal" value="${j.gpMaterials != null ? j.gpMaterials : ''}" ${dis} placeholder="0"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>${t('gp_labor')}</label><input class="gp-input" data-f="gpLabor" type="number" min="0" step="0.01" inputmode="decimal" value="${j.gpLabor != null ? j.gpLabor : ''}" ${dis} placeholder="0"></div>
+          <div class="field"><label>${t('gp_other')}</label><input class="gp-input" data-f="gpOther" type="number" min="0" step="0.01" inputmode="decimal" value="${j.gpOther != null ? j.gpOther : ''}" ${dis} placeholder="0" title="${escapeAttr(t('gp_other_hint'))}"></div>
+        </div>
+        <div class="field"><label>${t('gp_finished')}</label><input class="gp-input" data-f="gpFinished" type="date" value="${j.gpFinished || ''}" ${dis}></div>
+        <div class="gp-preview" style="font-size:14px;font-weight:700;">${c.price > 0 ? t('gp_profit') + ': ' + gpMoney(c.profit) + '  ·  ' + t('gp_margin') + ': ' + c.margin.toFixed(1) + '%' : t('gp_not_priced')}</div>
+        ${editMode ? `<div><button class="btn-primary gp-save-btn" type="button">${t('gp_save')}</button> <span class="gp-saved-msg" style="font-size:13px;color:#8a8175;"></span></div>` : ''}
+      </div>`;
+    });
+    html += '</div>';
+  }
+  content.innerHTML = html;
+
+  content.querySelectorAll('[data-year]').forEach(b=>{
+    b.onclick = ()=>{ gpYearFilter = b.dataset.year; render(); };
+  });
+  content.querySelectorAll('.gp-card').forEach(card=>{
+    const updatePreview = ()=>{
+      const v = {};
+      card.querySelectorAll('.gp-input').forEach(inp=>{ v[inp.dataset.f] = inp.value; });
+      const prev = card.querySelector('.gp-preview');
+      if(prev) prev.textContent = gpPreviewText(v.gpPrice, v.gpMaterials, v.gpLabor, v.gpOther);
+    };
+    card.querySelectorAll('.gp-input').forEach(inp=>{ inp.addEventListener('input', updatePreview); });
+    const saveBtn = card.querySelector('.gp-save-btn');
+    if(saveBtn){
+      saveBtn.onclick = async ()=>{
+        const job = activeJobs.find(x=>String(x.id) === String(card.dataset.id));
+        if(!job) return;
+        card.querySelectorAll('.gp-input').forEach(inp=>{
+          const f = inp.dataset.f;
+          if(f === 'gpFinished'){ job.gpFinished = inp.value || null; }
+          else { const n = parseFloat(inp.value); job[f] = (inp.value === '' || !isFinite(n)) ? null : n; }
+        });
+        saveBtn.disabled = true;
+        await saveActiveJobs();
+        const msg = card.querySelector('.gp-saved-msg');
+        if(msg) msg.textContent = t('gp_saved');
+        saveBtn.disabled = false;
+        render();
+      };
+    }
+  });
 }
 
 // ---------------- calendar view ----------------
@@ -3083,7 +3202,13 @@ function openActiveJobModal(job){
       driveUrl: document.getElementById('ajDriveUrl').value.trim() || null,
       crew: pickedCrew,
       noteLog,
-      createdAt: job ? job.createdAt : Date.now()
+      createdAt: job ? job.createdAt : Date.now(),
+      // keep gross-profit numbers entered on the Gross Profit tab
+      gpPrice: job ? (job.gpPrice != null ? job.gpPrice : null) : null,
+      gpMaterials: job ? (job.gpMaterials != null ? job.gpMaterials : null) : null,
+      gpLabor: job ? (job.gpLabor != null ? job.gpLabor : null) : null,
+      gpOther: job ? (job.gpOther != null ? job.gpOther : null) : null,
+      gpFinished: job ? (job.gpFinished || null) : null
     };
     const finToggle = document.getElementById('ajFinished');
     if(job && finToggle && finToggle.checked){
